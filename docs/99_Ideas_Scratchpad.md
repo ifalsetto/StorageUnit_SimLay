@@ -1,8 +1,64 @@
-# Scratchpad
+# Scratchpad — Raw Ideas & Notes
 
-Dump ALL raw ideas here.
-Messy is allowed. We'll mine it later.
+This file is intentionally messy. Anything goes here.
 
-- Random thought 1
-- “What if SimLay also did ___”
-- Notes from previous chats
+---
+
+## Random Concepts
+
+- “SimLay” = Simulation + Layout + Simplify
+- Treat each unit like a “case file”
+- The tool should reduce anxiety, not add complexity
+- Ideal experience:
+  Drag photos in → system gives clarity fast
+
+---
+
+## Value Estimation ideas
+
+- Pull resale comps automatically
+- Display value as:
+  - Conservative
+  - Expected
+  - Optimistic
+- Account for:
+  - Condition
+  - Time-to-sell
+  - Platform fees
+
+---
+
+## Risk Indicators
+
+- Water damage
+- Mold risk
+- Broken electronics
+- Furniture type
+- Missing cables
+
+---
+
+## UI Ideas
+
+- Clean Kanban-style board for item states
+- “High-value candidates” section
+- Tag cloud
+- Stats dashboard:
+  - Items by category
+  - % sellable
+  - Value distribution
+
+---
+
+## Business Possibilities
+
+- Paid pro tier
+- Team accounts
+- White-label for facilities
+- Exportable deal packets
+
+---
+
+## Personal Notes
+
+(You can paste ideas from past chats here freely.)
