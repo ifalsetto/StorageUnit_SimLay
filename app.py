@@ -2,17 +2,18 @@ import json
 import uuid
 from datetime import datetime
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 import streamlit as st
 
 
 # ---------- Paths & setup ----------
-
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 UNITS_DIR = DATA_DIR / "units"
 EXPORTS_DIR = BASE_DIR / "exports"
+
 VALUE_LIBRARY_PATH = DATA_DIR / "value_library.json"
 APPROVED_COMPS_PATH = DATA_DIR / "approved_comps.json"
 SALES_HISTORY_PATH = DATA_DIR / "sales_history.csv"
@@ -20,71 +21,126 @@ AUDIT_LOG_PATH = DATA_DIR / "audit_log.jsonl"
 UNITS_INDEX_PATH = DATA_DIR / "units_index.json"
 
 
-def ensure_dirs():
-    DATA_DIR.mkdir(exist_ok=True)
-    UNITS_DIR.mkdir(exist_ok=True)
-    EXPORTS_DIR.mkdir(exist_ok=True)
+# ---------- Utilities ----------
+def utc_now_iso() -> str:
+    return datetime.utcnow().isoformat() + "Z"
+
+
+def ensure_dirs() -> None:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    UNITS_DIR.mkdir(parents=True, exist_ok=True)
+    EXPORTS_DIR.mkdir(parents=True, exist_ok=True)
+
     if not UNITS_INDEX_PATH.exists():
-        with open(UNITS_INDEX_PATH, "w", encoding="utf-8") as f:
-            json.dump({"units": []}, f)
+        UNITS_INDEX_PATH.write_text(json.dumps({"units": []}, indent=2), encoding="utf-8")
 
 
-def log_audit(event: str, details: dict):
-    entry = {
-        "timestamp": datetime.utcnow().isoformat() + "Z",
-        "event": event,
-        "details": details,
-    }
+def log_audit(event: str, details: Dict[str, Any]) -> None:
+    ensure_dirs()
+    entry = {"timestamp": utc_now_iso(), "event": event, "details": details}
     with open(AUDIT_LOG_PATH, "a", encoding="utf-8") as f:
         f.write(json.dumps(entry) + "\n")
 
 
-def load_units_index():
+def _read_json(path: Path, default: Any) -> Any:
+    if not path.exists():
+        return default
+    try:
+        # utf-8-sig handles BOM files created by some Windows/PowerShell flows
+        with open(path, "r", encoding="utf-8-sig") as f:
+            return json.load(f)
+    except Exception:
+        return default
+
+
+def _write_json(path: Path, data: Any) -> None:
     ensure_dirs()
-    if not UNITS_INDEX_PATH.exists():
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+
+
+def parse_number(value: Any, default: float = 0.0) -> float:
+    """
+    Robust float parser:
+    - accepts numbers, None
+    - accepts strings like "$1,200", "1,200.50", "(35)", "  40 ", "~50"
+    """
+    if value is None:
+        return default
+    if isinstance(value, (int, float)):
+        return float(value)
+
+    s = str(value).strip()
+    if not s:
+        return default
+
+    # common decorations
+    s = s.replace("$", "").replace(",", "").replace("~", "").strip()
+
+    # parentheses as negative
+    negative = False
+    if s.startswith("(") and s.endswith(")"):
+        negative = True
+        s = s[1:-1].strip()
+
+    try:
+        out = float(s)
+        return -out if negative else out
+    except Exception:
+        return default
+
+
+def parse_int(value: Any, default: int = 1) -> int:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return default
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    s = str(value).strip()
+    if not s:
+        return default
+    # allow "2.0"
+    try:
+        return int(float(s))
+    except Exception:
+        return default
+
+
+# ---------- Unit storage ----------
+def load_units_index() -> Dict[str, Any]:
+    ensure_dirs()
+    data = _read_json(UNITS_INDEX_PATH, {"units": []})
+    if not isinstance(data, dict) or "units" not in data or not isinstance(data["units"], list):
         return {"units": []}
-    # handle UTF-8 BOM from PowerShell-created file
-    with open(UNITS_INDEX_PATH, "r", encoding="utf-8-sig") as f:
-        return json.load(f)
+    return data
 
 
-def save_units_index(index):
-    with open(UNITS_INDEX_PATH, "w", encoding="utf-8") as f:
-        json.dump(index, f, indent=2)
+def save_units_index(index: Dict[str, Any]) -> None:
+    _write_json(UNITS_INDEX_PATH, index)
 
 
 def unit_path(unit_id: str) -> Path:
     return UNITS_DIR / f"{unit_id}.json"
 
 
-def load_unit(unit_id: str) -> dict:
+def load_unit(unit_id: str) -> Optional[Dict[str, Any]]:
     path = unit_path(unit_id)
-    if not path.exists():
-        return None
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+    data = _read_json(path, None)
+    return data if isinstance(data, dict) else None
 
 
-def save_unit(unit_data: dict):
-    path = unit_path(unit_data["unit_id"])
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(unit_data, f, indent=2)
-
-
-def safe_float(value, default=0.0):
-    try:
-        if value is None:
-            return default
-        return float(value)
-    except Exception:
-        return default
+def save_unit(unit_data: Dict[str, Any]) -> None:
+    _write_json(unit_path(unit_data["unit_id"]), unit_data)
 
 
 # ---------- JSON import helper ----------
-
-def import_items_from_json(raw: str, phase: str):
+def import_items_from_json(raw: str, phase: str) -> List[Dict[str, Any]]:
     """
     Parse JSON from ChatGPT into normalized item dicts.
+
     raw: JSON string representing either a list of items or {"items": [...]}
     phase: "prepurchase" or "work"
     """
@@ -103,8 +159,11 @@ def import_items_from_json(raw: str, phase: str):
     if not isinstance(data, list):
         raise ValueError("JSON must be a list of items or an object with an 'items' list.")
 
-    items = []
+    items: List[Dict[str, Any]] = []
     for obj in data:
+        if not isinstance(obj, dict):
+            continue
+
         name = (obj.get("name") or "").strip()
         if not name:
             continue
@@ -113,9 +172,9 @@ def import_items_from_json(raw: str, phase: str):
             "id": str(uuid.uuid4()),
             "name": name,
             "category": (obj.get("category") or "unknown").strip(),
-            "quantity": int(obj.get("quantity") or 1),
-            "estimated_low": float(obj.get("estimated_low") or 0.0),
-            "estimated_high": float(obj.get("estimated_high") or 0.0),
+            "quantity": parse_int(obj.get("quantity"), default=1),
+            "estimated_low": parse_number(obj.get("estimated_low"), default=0.0),
+            "estimated_high": parse_number(obj.get("estimated_high"), default=0.0),
             "confidence": (obj.get("confidence") or "Unknown"),
             "source": (obj.get("source") or "Manual"),
             "platform": (obj.get("platform") or "Local marketplace").strip(),
@@ -129,35 +188,37 @@ def import_items_from_json(raw: str, phase: str):
 
 
 # ---------- Summary / engine logic ----------
-
-def compute_items_summary(items):
+def compute_items_summary(items: List[Dict[str, Any]]) -> Tuple[float, float, float]:
     total_low = 0.0
     total_high = 0.0
+
     for item in items:
-        q = item.get("quantity", 1)
-        v_low = safe_float(item.get("estimated_low"))
-        v_high = safe_float(item.get("estimated_high"))
+        q = parse_int(item.get("quantity"), default=1)
+        v_low = parse_number(item.get("estimated_low"), default=0.0)
+        v_high = parse_number(item.get("estimated_high"), default=0.0)
         total_low += v_low * q
         total_high += v_high * q
+
     total_expected = (total_low + total_high) / 2.0 if (total_low or total_high) else 0.0
     return total_low, total_high, total_expected
 
 
-def compute_unit_overview(unit):
+def compute_unit_overview(unit: Dict[str, Any]) -> Dict[str, float]:
     """
-    Dump fees are NOT included anymore. Only:
-    - current_bid
-    - other_costs
+    Dump fees are NOT included anymore.
+    Only:
+      - current_bid
+      - other_costs
     """
-    pre_items = unit.get("prepurchase_items", [])
-    work_items = unit.get("work_items", [])
+    pre_items = unit.get("prepurchase_items", []) or []
+    work_items = unit.get("work_items", []) or []
     items = work_items if work_items else pre_items
 
     low, high, expected = compute_items_summary(items)
 
-    current_bid = safe_float(unit.get("current_bid"))
-    dump_estimate = 0.0  # kept for compatibility but not used
-    other_costs = safe_float(unit.get("other_costs"))
+    current_bid = parse_number(unit.get("current_bid"), default=0.0)
+    other_costs = parse_number(unit.get("other_costs"), default=0.0)
+
     total_costs = current_bid + other_costs
     expected_net = expected - total_costs
 
@@ -166,19 +227,17 @@ def compute_unit_overview(unit):
         "high_gross": high,
         "expected_gross": expected,
         "current_bid": current_bid,
-        "dump_estimate": dump_estimate,
         "other_costs": other_costs,
         "total_costs": total_costs,
         "expected_net": expected_net,
     }
 
 
-def unit_to_report_blocks(unit):
+def unit_to_report_blocks(unit: Dict[str, Any]) -> Tuple[str, str, str]:
     overview = compute_unit_overview(unit)
     items = unit.get("work_items") or unit.get("prepurchase_items") or []
 
-    # Decision summary
-    decision_lines = []
+    decision_lines: List[str] = []
     decision_lines.append(f"Unit ID: {unit['unit_id']}")
     decision_lines.append(f"Created: {unit.get('created_at', 'N/A')}")
     decision_lines.append(f"Status: {unit.get('status', 'unknown')}")
@@ -193,30 +252,26 @@ def unit_to_report_blocks(unit):
     decision_lines.append(f"Expected Net: ${overview['expected_net']:.2f}")
     decision_summary = "\n".join(decision_lines)
 
-    # Inventory list
-    inv_lines = []
-    inv_lines.append("=== Inventory ===")
+    inv_lines: List[str] = ["=== Inventory ==="]
     for item in items:
         inv_lines.append(
             f"- {item.get('name', 'Unnamed item')} "
-            f"(qty {item.get('quantity', 1)}, "
-            f"value ${safe_float(item.get('estimated_low')):.2f}–${safe_float(item.get('estimated_high')):.2f}, "
+            f"(qty {parse_int(item.get('quantity'), 1)}, "
+            f"value ${parse_number(item.get('estimated_low')):.2f}–${parse_number(item.get('estimated_high')):.2f}, "
             f"confidence: {item.get('confidence', 'Unknown')}, "
             f"source: {item.get('source', 'Manual')}, "
             f"status: {item.get('status', 'Unassigned')})"
         )
     inventory_block = "\n".join(inv_lines)
 
-    # Listing pack
-    listing_lines = []
-    listing_lines.append("=== Listing Pack (Sell Items Only) ===")
+    listing_lines: List[str] = ["=== Listing Pack (Sell Items Only) ==="]
     for item in items:
         if item.get("status") == "Sell":
             name = item.get("name", "Unnamed item")
-            qty = item.get("quantity", 1)
+            qty = parse_int(item.get("quantity"), 1)
             platform = item.get("platform", "Local marketplace")
-            v_low = safe_float(item.get("estimated_low"))
-            v_high = safe_float(item.get("estimated_high"))
+            v_low = parse_number(item.get("estimated_low"))
+            v_high = parse_number(item.get("estimated_high"))
             listing_lines.append(f"{name} (x{qty})")
             listing_lines.append(f"Suggested platform: {platform}")
             listing_lines.append(f"Price band: ${v_low:.2f}–${v_high:.2f}")
@@ -227,15 +282,17 @@ def unit_to_report_blocks(unit):
 
 
 # ---------- UI helpers ----------
-
-def select_or_create_unit():
+def select_or_create_unit() -> None:
     index = load_units_index()
     units = index.get("units", [])
 
     st.sidebar.header("Units")
-
-    existing_ids = [u["unit_id"] for u in units]
-    existing_labels = [f"{u['unit_id']} – {u.get('status', 'unknown')}" for u in units]
+    existing_ids = [u.get("unit_id") for u in units if isinstance(u, dict) and u.get("unit_id")]
+    existing_labels = [
+        f"{u.get('unit_id')} – {u.get('status', 'unknown')}"
+        for u in units
+        if isinstance(u, dict) and u.get("unit_id")
+    ]
 
     selected_label = None
     if existing_labels:
@@ -247,22 +304,19 @@ def select_or_create_unit():
 
     if selected_label and selected_label != "(none)":
         idx = existing_labels.index(selected_label)
-        unit_id = existing_ids[idx]
-        st.session_state["current_unit_id"] = unit_id
+        st.session_state["current_unit_id"] = existing_ids[idx]
 
     st.sidebar.markdown("---")
     st.sidebar.subheader("Create new unit")
 
     if st.sidebar.button("Start new prospective unit"):
         unit_id = str(uuid.uuid4())[:8]
-        created_at = datetime.utcnow().isoformat() + "Z"
         unit = {
             "unit_id": unit_id,
             "status": "prospective",
-            "created_at": created_at,
+            "created_at": utc_now_iso(),
             "purchased_at": None,
             "current_bid": 0.0,
-            "dump_estimate": 0.0,
             "other_costs": 0.0,
             "prepurchase_items": [],
             "work_items": [],
@@ -274,9 +328,10 @@ def select_or_create_unit():
         save_units_index(index)
         log_audit("create_unit", {"unit_id": unit_id})
         st.session_state["current_unit_id"] = unit_id
+        st.rerun()
 
 
-def show_unit_header(unit):
+def show_unit_header(unit: Dict[str, Any]) -> None:
     st.subheader(f"Unit ID: {unit['unit_id']}")
     st.write(f"Status: **{unit.get('status', 'unknown')}**")
     st.caption(f"Created at: {unit.get('created_at', 'N/A')} (UTC)")
@@ -284,31 +339,27 @@ def show_unit_header(unit):
 
 
 # ---------- Pre-purchase UI ----------
-
-def ui_prepurchase(unit, index):
+def ui_prepurchase(unit: Dict[str, Any], index: Dict[str, Any]) -> None:
     st.markdown("### Pre-Purchase Simulation (Before Buying)")
 
-    # Only unit price + other costs matter now
     current_bid = st.number_input(
         "Current bid / expected price ($)",
         min_value=0.0,
-        value=float(unit.get("current_bid") or 0.0),
+        value=parse_number(unit.get("current_bid"), 0.0),
         step=10.0,
     )
     other_costs = st.number_input(
         "Other costs (optional, e.g. gas, tips)",
         min_value=0.0,
-        value=float(unit.get("other_costs") or 0.0),
+        value=parse_number(unit.get("other_costs"), 0.0),
         step=5.0,
     )
 
-    unit["current_bid"] = current_bid
-    unit["dump_estimate"] = 0.0
-    unit["other_costs"] = other_costs
+    unit["current_bid"] = float(current_bid)
+    unit["other_costs"] = float(other_costs)
     save_unit(unit)
 
     st.markdown("#### Add item you can SEE in photos")
-
     with st.form("add_prepurchase_item"):
         name = st.text_input("Item name")
         category = st.text_input("Category", value="unknown")
@@ -352,16 +403,15 @@ def ui_prepurchase(unit, index):
                 save_unit(unit)
                 log_audit("add_prepurchase_item", {"unit_id": unit["unit_id"], "item_name": name})
                 st.success("Item added.")
+                st.rerun()
 
-    # JSON import from ChatGPT
     st.markdown("#### Import items from ChatGPT")
     import_tabs = st.tabs(["Paste JSON", "Upload JSON file"])
 
-    # Paste JSON tab
     with import_tabs[0]:
         with st.form("prepurchase_import_paste"):
             raw_json = st.text_area(
-                "Paste JSON from ChatGPT here (list or {\"items\": [...]})",
+                'Paste JSON from ChatGPT here (list or {"items": [...]})',
                 height=150,
                 placeholder='[{"name": "Nintendo Switch", "estimated_low": 160, "estimated_high": 230}]',
             )
@@ -374,15 +424,15 @@ def ui_prepurchase(unit, index):
                     else:
                         unit.setdefault("prepurchase_items", []).extend(new_items)
                         save_unit(unit)
-                        log_audit("import_prepurchase_items_text", {
-                            "unit_id": unit["unit_id"],
-                            "count": len(new_items),
-                        })
-                        st.success(f"Imported {len(new_items)} items from JSON text.")
+                        log_audit(
+                            "import_prepurchase_items_text",
+                            {"unit_id": unit["unit_id"], "count": len(new_items)},
+                        )
+                        st.success(f"Imported {len(new_items)} items.")
+                        st.rerun()
                 except Exception as e:
                     st.error(f"Import failed: {e}")
 
-    # Upload JSON file tab
     with import_tabs[1]:
         uploaded = st.file_uploader(
             "Upload .json file from ChatGPT",
@@ -392,23 +442,23 @@ def ui_prepurchase(unit, index):
         if uploaded is not None:
             if st.button("Import simulated items from file"):
                 try:
-                    raw_bytes = uploaded.read()
-                    raw_json = raw_bytes.decode("utf-8-sig")
+                    raw_json = uploaded.read().decode("utf-8-sig")
                     new_items = import_items_from_json(raw_json, phase="prepurchase")
                     if not new_items:
                         st.warning("No valid items found in file.")
                     else:
                         unit.setdefault("prepurchase_items", []).extend(new_items)
                         save_unit(unit)
-                        log_audit("import_prepurchase_items_file", {
-                            "unit_id": unit["unit_id"],
-                            "count": len(new_items),
-                        })
-                        st.success(f"Imported {len(new_items)} items from JSON file.")
+                        log_audit(
+                            "import_prepurchase_items_file",
+                            {"unit_id": unit["unit_id"], "count": len(new_items)},
+                        )
+                        st.success(f"Imported {len(new_items)} items.")
+                        st.rerun()
                 except Exception as e:
                     st.error(f"File import failed: {e}")
 
-    sim_items = unit.get("prepurchase_items", [])
+    sim_items = unit.get("prepurchase_items", []) or []
     st.markdown("#### Simulated items")
     if sim_items:
         df = pd.DataFrame(sim_items)[
@@ -431,28 +481,31 @@ def ui_prepurchase(unit, index):
     if unit.get("status") == "prospective":
         if st.button("Mark unit as purchased"):
             unit["status"] = "purchased"
-            unit["purchased_at"] = datetime.utcnow().isoformat() + "Z"
+            unit["purchased_at"] = utc_now_iso()
             save_unit(unit)
-            for u in index["units"]:
-                if u["unit_id"] == unit["unit_id"]:
+
+            for u in index.get("units", []):
+                if u.get("unit_id") == unit["unit_id"]:
                     u["status"] = "purchased"
             save_units_index(index)
+
             log_audit("mark_purchased", {"unit_id": unit["unit_id"]})
             st.success("Unit marked as purchased.")
+            st.rerun()
 
 
 # ---------- Work mode ----------
-
-def ui_work_mode(unit):
+def ui_work_mode(unit: Dict[str, Any]) -> None:
     st.markdown("### Work Mode (After Purchase)")
+    work_items = unit.get("work_items", []) or []
 
-    work_items = unit.get("work_items", [])
-    item_names = ["(new item)"] + [f"{i['name']} (qty {i.get('quantity', 1)})" for i in work_items]
+    item_names = ["(new item)"] + [f"{i.get('name','(unnamed)')} (qty {parse_int(i.get('quantity'), 1)})" for i in work_items]
     choice = st.selectbox("Select item to edit or create", options=item_names, index=0)
 
     editing_existing = choice != "(new item)"
     existing_item = None
     idx = None
+
     if editing_existing:
         idx = item_names.index(choice) - 1
         existing_item = work_items[idx]
@@ -463,7 +516,7 @@ def ui_work_mode(unit):
         quantity = st.number_input(
             "Quantity",
             min_value=1,
-            value=int(existing_item.get("quantity", 1)) if existing_item else 1,
+            value=parse_int(existing_item.get("quantity"), 1) if existing_item else 1,
             step=1,
         )
 
@@ -473,52 +526,63 @@ def ui_work_mode(unit):
                 "Low value ($)",
                 min_value=0.0,
                 step=1.0,
-                value=float(existing_item.get("estimated_low", 0.0)) if existing_item else 0.0,
+                value=parse_number(existing_item.get("estimated_low"), 0.0) if existing_item else 0.0,
             )
         with colv2:
             estimated_high = st.number_input(
                 "High value ($)",
                 min_value=0.0,
                 step=1.0,
-                value=float(existing_item.get("estimated_high", 0.0)) if existing_item else 0.0,
+                value=parse_number(existing_item.get("estimated_high"), 0.0) if existing_item else 0.0,
             )
 
+        confidence_list = ["Verified", "Inferred", "Unknown"]
         confidence = st.selectbox(
             "Confidence",
-            ["Verified", "Inferred", "Unknown"],
-            index=["Verified", "Inferred", "Unknown"].index(
-                existing_item.get("confidence", "Unknown")
-            ) if existing_item else 2,
+            confidence_list,
+            index=confidence_list.index(existing_item.get("confidence", "Unknown")) if existing_item else 2,
         )
+
         source = st.selectbox(
             "Source",
             ["Manual", "Default Library", "Tony History", "Approved Comp", "Web (Cited)"],
             index=0,
         )
+
         platform = st.text_input(
             "Platform",
             value=existing_item.get("platform", "Local marketplace") if existing_item else "Local marketplace",
         )
+
+        status_list = ["Sell", "Donate", "Dump", "Hold", "Unassigned"]
         status = st.selectbox(
             "Status",
-            ["Sell", "Donate", "Dump", "Hold", "Unassigned"],
-            index=["Sell", "Donate", "Dump", "Hold", "Unassigned"].index(
-                existing_item.get("status", "Unassigned")
-            ) if existing_item else 4,
-        )
-        notes = st.text_area(
-            "Notes",
-            value=existing_item.get("notes", "") if existing_item else "",
-            height=80,
+            status_list,
+            index=status_list.index(existing_item.get("status", "Unassigned")) if existing_item else 4,
         )
 
-        submitted = st.form_submit_button("Save item")
+        notes = st.text_area("Notes", value=existing_item.get("notes", "") if existing_item else "", height=80)
+
+        col_a, col_b = st.columns([1, 1])
+        with col_a:
+            submitted = st.form_submit_button("Save item")
+        with col_b:
+            delete_clicked = st.form_submit_button("Delete item") if editing_existing else False
+
+        if delete_clicked and editing_existing and idx is not None:
+            deleted = work_items.pop(idx)
+            unit["work_items"] = work_items
+            save_unit(unit)
+            log_audit("delete_work_item", {"unit_id": unit["unit_id"], "item_id": deleted.get("id")})
+            st.success("Item deleted.")
+            st.rerun()
+
         if submitted:
             if not name.strip():
                 st.error("Item name is required.")
             else:
                 item_data = {
-                    "id": existing_item.get("id", str(uuid.uuid4())) if existing_item else str(uuid.uuid4()),
+                    "id": (existing_item.get("id") if existing_item else str(uuid.uuid4())),
                     "name": name.strip(),
                     "category": category.strip(),
                     "quantity": int(quantity),
@@ -531,19 +595,22 @@ def ui_work_mode(unit):
                     "notes": notes.strip(),
                     "phase": "work",
                 }
-                if editing_existing:
+
+                if editing_existing and idx is not None:
                     work_items[idx] = item_data
                     log_event = "update_work_item"
                 else:
                     work_items.append(item_data)
                     log_event = "add_work_item"
+
                 unit["work_items"] = work_items
                 save_unit(unit)
                 log_audit(log_event, {"unit_id": unit["unit_id"], "item_name": name})
                 st.success("Item saved.")
+                st.rerun()
 
     st.markdown("#### Current work items")
-    work_items = unit.get("work_items", [])
+    work_items = unit.get("work_items", []) or []
     if work_items:
         df = pd.DataFrame(work_items)[
             ["name", "status", "category", "quantity", "estimated_low", "estimated_high", "confidence", "source"]
@@ -556,11 +623,10 @@ def ui_work_mode(unit):
     st.markdown("#### Import items from ChatGPT")
     import_tabs = st.tabs(["Paste JSON", "Upload JSON file"])
 
-    # Paste JSON tab
     with import_tabs[0]:
         with st.form("work_import_paste"):
             raw_json = st.text_area(
-                "Paste JSON from ChatGPT here (list or {\"items\": [...]})",
+                'Paste JSON from ChatGPT here (list or {"items": [...]})',
                 height=150,
                 placeholder='[{"name": "Tool set", "estimated_low": 40, "estimated_high": 80}]',
             )
@@ -573,15 +639,12 @@ def ui_work_mode(unit):
                     else:
                         unit.setdefault("work_items", []).extend(new_items)
                         save_unit(unit)
-                        log_audit("import_work_items_text", {
-                            "unit_id": unit["unit_id"],
-                            "count": len(new_items),
-                        })
-                        st.success(f"Imported {len(new_items)} items from JSON text.")
+                        log_audit("import_work_items_text", {"unit_id": unit["unit_id"], "count": len(new_items)})
+                        st.success(f"Imported {len(new_items)} items.")
+                        st.rerun()
                 except Exception as e:
                     st.error(f"Import failed: {e}")
 
-    # Upload JSON file tab
     with import_tabs[1]:
         uploaded = st.file_uploader(
             "Upload .json file from ChatGPT",
@@ -591,26 +654,22 @@ def ui_work_mode(unit):
         if uploaded is not None:
             if st.button("Import work items from file"):
                 try:
-                    raw_bytes = uploaded.read()
-                    raw_json = raw_bytes.decode("utf-8-sig")
+                    raw_json = uploaded.read().decode("utf-8-sig")
                     new_items = import_items_from_json(raw_json, phase="work")
                     if not new_items:
                         st.warning("No valid items found in file.")
                     else:
                         unit.setdefault("work_items", []).extend(new_items)
                         save_unit(unit)
-                        log_audit("import_work_items_file", {
-                            "unit_id": unit["unit_id"],
-                            "count": len(new_items),
-                        })
-                        st.success(f"Imported {len(new_items)} items from JSON file.")
+                        log_audit("import_work_items_file", {"unit_id": unit["unit_id"], "count": len(new_items)})
+                        st.success(f"Imported {len(new_items)} items.")
+                        st.rerun()
                 except Exception as e:
                     st.error(f"File import failed: {e}")
 
 
 # ---------- Tony mode ----------
-
-def ui_tony_mode(unit):
+def ui_tony_mode(unit: Dict[str, Any]) -> None:
     st.markdown("### Tony Mode (Summary View)")
     overview = compute_unit_overview(unit)
 
@@ -632,21 +691,19 @@ def ui_tony_mode(unit):
 
 
 # ---------- Reports ----------
-
-def ui_reports(unit):
+def ui_reports(unit: Dict[str, Any]) -> None:
     st.markdown("### Reports")
     d, i, l = unit_to_report_blocks(unit)
 
     st.markdown("#### Decision Summary")
     st.code(d, language="text")
-
     st.markdown("#### Inventory")
     st.code(i, language="text")
-
     st.markdown("#### Listings")
     st.code(l, language="text")
 
     json_bytes = json.dumps(unit, indent=2).encode("utf-8")
+
     st.download_button(
         "Download JSON",
         json_bytes,
@@ -654,14 +711,15 @@ def ui_reports(unit):
         mime="application/json",
     )
 
-    export_path = EXPORTS_DIR / f"unit_{unit['unit_id']}.json"
-    with open(export_path, "wb") as f:
-        f.write(json_bytes)
+    if st.button("Save export file to /exports"):
+        ensure_dirs()
+        export_path = EXPORTS_DIR / f"unit_{unit['unit_id']}.json"
+        export_path.write_bytes(json_bytes)
+        st.success(f"Saved: {export_path}")
 
 
 # ---------- Main ----------
-
-def main():
+def main() -> None:
     st.set_page_config(page_title="StorageUnit SimLay", layout="wide")
     ensure_dirs()
 
@@ -669,7 +727,6 @@ def main():
         st.session_state["current_unit_id"] = None
 
     st.title("StorageUnit SimLay")
-
     select_or_create_unit()
 
     current_id = st.session_state.get("current_unit_id")
@@ -683,7 +740,6 @@ def main():
         return
 
     index = load_units_index()
-
     show_unit_header(unit)
 
     if unit.get("status") == "prospective":
