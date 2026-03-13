@@ -1,12 +1,10 @@
 import json
+import pandas as pd
+import streamlit as st
 import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
-
-import pandas as pd
-import streamlit as st
-
 
 # ---------- Paths & setup ----------
 BASE_DIR = Path(__file__).resolve().parent
@@ -26,7 +24,7 @@ def utc_now_iso() -> str:
     return datetime.utcnow().isoformat() + "Z"
 
 
-def ensure_dirs() -> None:
+def  -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     UNITS_DIR.mkdir(parents=True, exist_ok=True)
     EXPORTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -39,7 +37,7 @@ def log_audit(event: str, details: Dict[str, Any]) -> None:
     ensure_dirs()
     entry = {"timestamp": utc_now_iso(), "event": event, "details": details}
     with open(AUDIT_LOG_PATH, "a", encoding="utf-8") as f:
-        f.write(json.dumps(entry) + "\n")
+    f.write(json.dumps(entry) + "\n")
 
 
 def _read_json(path: Path, default: Any) -> Any:
@@ -54,7 +52,6 @@ def _read_json(path: Path, default: Any) -> Any:
 
 
 def _write_json(path: Path, data: Any) -> None:
-    ensure_dirs()
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
@@ -110,7 +107,7 @@ def parse_int(value: Any, default: int = 1) -> int:
 
 
 # ---------- Unit storage ----------
-def load_units_index() -> Dict[str, Any]:
+def  -> Dict[str, Any]:
     ensure_dirs()
     data = _read_json(UNITS_INDEX_PATH, {"units": []})
     if not isinstance(data, dict) or "units" not in data or not isinstance(data["units"], list):
@@ -283,7 +280,7 @@ def unit_to_report_blocks(unit: Dict[str, Any]) -> Tuple[str, str, str]:
 
 # ---------- UI helpers ----------
 def select_or_create_unit() -> None:
-    index = load_units_index()
+    index = 
     units = index.get("units", [])
 
     st.sidebar.header("Units")
@@ -739,7 +736,7 @@ def main() -> None:
         st.error("Could not load unit data.")
         return
 
-    index = load_units_index()
+    index = 
     show_unit_header(unit)
 
     if unit.get("status") == "prospective":
@@ -749,16 +746,19 @@ def main() -> None:
         with tabs[1]:
             ui_reports(unit)
     else:
-        tabs = st.tabs(["Pre-Purchase View", "Work Mode", "Tony Mode", "Reports"])
-        with tabs[0]:
-            ui_prepurchase(unit, index)
-        with tabs[1]:
-            ui_work_mode(unit)
-        with tabs[2]:
-            ui_tony_mode(unit)
-        with tabs[3]:
-            ui_reports(unit)
+        tabs = st.tabs(["Pre-Purchase", "Work Mode", "Tony Mode", "Reports"])
 
+with tabs[0]:
+    ui_prepurchase(unit, index)
+
+with tabs[1]:
+    ui_work_mode(unit)
+
+with tabs[2]:
+    ui_tony_mode(unit)
+
+with tabs[3]:
+    ui_reports(unit)
 
 if __name__ == "__main__":
     main()
