@@ -1,0 +1,62 @@
+valuation_version: "1.0"
+
+bands:
+  method: "percentile"
+  percentiles: [25, 50, 75]
+  filter_outliers_first: true
+
+evidence_gates:
+  min_comps: 3
+  max_variance_ratio: 4.0
+  require_sold_comps: false
+  max_comp_age_days: 365
+
+evidence_types:
+  sold_listings:
+    preferred: true
+    weight: 1.0
+  active_listings:
+    allowed: true
+    discount_pct: 15
+    fallback_only: true
+    min_active_for_fallback: 5
+
+fallback_rules:
+  no_sold_comps:
+    use_active: true
+    require_conservative: true
+    active_percentile: 20
+
+confidence_methods:
+  Verified:
+    method: "percentile"
+    percentile: 50
+    condition_adjustment: true
+  Inferred:
+    method: "percentile"
+    percentile: 30
+    condition_adjustment: false
+  Unknown:
+    method: "none"
+    fallback_enabled: false
+    bulk_lot_percentile: 10
+
+condition_multipliers:
+  New: 1.0
+  Like New: 0.85
+  Used: 0.70
+  Fair: 0.50
+  Parts: 0.25
+  Unknown: null
+
+unknown_condition_behavior: "no_adjust"
+
+outlier_detection:
+  enabled: true
+  method: "iqr"
+  iqr_multiplier: 1.5
+
+export:
+  default_band: "p25"
+  round_to: 0
+  failed_gates_behavior: "blank"

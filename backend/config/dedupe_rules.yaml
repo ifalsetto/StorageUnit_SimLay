@@ -1,0 +1,24 @@
+dedupe_version: "1.0"
+strategies:
+  visual_similarity:
+    enabled: true
+    threshold: 0.85
+  name_matching:
+    enabled: true
+    method: "fuzzy"
+    threshold: 0.90
+  spatial_tracking:
+    enabled: true
+    max_movement_pixels: 100
+
+grouping:
+  small_indistinct_objects:
+    enabled: true
+    max_individual_size_percent: 5
+    group_as: "Small items lot"
+  boxes_totes:
+    treat_as_single_item: true
+    contents_handling: "unknown"
+
+quantity_rules:
+  require_visual_confirmation: true

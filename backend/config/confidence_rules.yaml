@@ -1,0 +1,32 @@
+confidence_version: "1.0"
+allowed_confidence: ["Verified", "Inferred", "Unknown"]
+allowed_conditions: ["New", "Like New", "Used", "Fair", "Parts", "Unknown"]
+
+rules:
+  verified:
+    description: "Clear model/brand/identifier visible"
+    criteria:
+      - "Brand name visible in image"
+      - "Model number/name visible"
+      - "Unique identifying features present"
+  inferred:
+    description: "Clear item type, no model certainty"
+    criteria:
+      - "Item type identifiable"
+      - "General category obvious"
+      - "No specific brand/model visible"
+  unknown:
+    description: "Obscured, bundled, boxed, or unclear"
+    criteria:
+      - "Item heavily obscured"
+      - "Multiple items bundled together without clear separation"
+      - "Sealed boxes/containers"
+      - "Image too blurry or dark"
+
+downgrades:
+  - condition: "No brand detected by vision"
+    action: "Maximum confidence = Inferred"
+  - condition: "Multiple items grouped together"
+    action: "Confidence = Inferred or Unknown"
+  - condition: "Item in sealed container"
+    action: "Confidence = Unknown"

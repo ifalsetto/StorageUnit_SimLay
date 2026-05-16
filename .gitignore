@@ -1,21 +1,10 @@
-# VS Code
-.vscode/
-
-# Python
+.venv/
 __pycache__/
 *.pyc
-
-# Node
-node_modules/
-
-# Logs
-*.log
-
-# OS
-Thumbs.db
-Desktop.ini
-
-# Build artifacts
-dist/
-build/
-1
+backend/data/simlay.db
+backend/data/uploads/*
+backend/data/exports/*
+backend/logs/*.log
+frontend/node_modules/
+frontend/dist/
+.env

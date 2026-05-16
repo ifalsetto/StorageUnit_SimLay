@@ -1,0 +1,56 @@
+plugins { id 'com.android.application' }
+
+def appUrl = project.findProperty("SIMLAY_APP_URL") ?: "https://REPLACE-WITH-YOUR-FRONTEND-DOMAIN.example"
+def appVersionName = project.findProperty("SIMLAY_VERSION_NAME") ?: "1.0.0"
+def appVersionCode = (project.findProperty("SIMLAY_VERSION_CODE") ?: "1") as Integer
+
+def keystorePropertiesFile = rootProject.file("key.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+android {
+    buildFeatures { buildConfig true }
+    namespace 'com.falsetech.simlay'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.falsetech.simlay'
+        minSdk 23
+        targetSdk 35
+        versionCode appVersionCode
+        versionName appVersionName
+        buildConfigField "String", "SIMLAY_APP_URL", "\"${appUrl}\""
+        vectorDrawables.useSupportLibrary = true
+    }
+
+    signingConfigs {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-debug'
+        }
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (keystorePropertiesFile.exists()) signingConfig signingConfigs.release
+        }
+    }
+}
+
+
+dependencies {
+    implementation 'androidx.core:core:1.15.0'
+}

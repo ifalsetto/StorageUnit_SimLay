@@ -1,0 +1,31 @@
+{
+  "profile_name": "default",
+  "profile_version": "1.0",
+  "description": "Default StorageUnit SimLay configuration",
+  "remote_profile_url": null,
+  "inherits_from": null,
+  "overrides": {
+    "export": {
+      "handle_prefix": "ITEM",
+      "sku_prefix": "FT-GEN"
+    },
+    "taxonomy": {
+      "categories": {
+        "scrap_junk": {
+          "enabled": false
+        }
+      }
+    },
+    "valuation": {
+      "evidence_gates": {
+        "min_comps": 3
+      }
+    }
+  },
+  "metadata": {
+    "created_at": "2026-02-03T00:00:00Z",
+    "created_by": "FalseTech",
+    "wix_site_url": null,
+    "notes": "Baseline configuration for new projects"
+  }
+}

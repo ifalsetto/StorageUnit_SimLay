@@ -1,0 +1,13 @@
+StorageUnit SimLay is an inventory and resale evidence workflow app for storage-unit buyers and resellers.
+
+Test flow for reviewers:
+1. Open the app.
+2. Create a new inventory run.
+3. Upload or stage a sample storage-unit/product image.
+4. Review detected or manually entered item.
+5. Add price evidence as URL/screenshot/manual structured evidence.
+6. Export Wix CSV and audit JSON.
+
+The app needs camera/media permissions only for user-selected storage-unit photos and videos. It does not run background capture.
+
+If AI vision is disabled in the review environment, use the mock provider/sample flow. Live market connectors are disabled unless explicitly configured with approved credentials.

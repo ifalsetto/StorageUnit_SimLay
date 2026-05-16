@@ -1,0 +1,49 @@
+taxonomy_version: "1.0"
+categories:
+  furniture:
+    label: "Furniture"
+    sort_tier: 1
+    keywords: ["chair", "table", "desk", "sofa", "couch", "cabinet", "dresser", "shelf", "bed"]
+    subcategories: ["Chairs & Seating", "Tables & Desks", "Storage & Cabinets", "Beds & Mattresses", "Shelving"]
+  tools:
+    label: "Tools & Equipment"
+    sort_tier: 1
+    keywords: ["tool", "drill", "saw", "wrench", "socket", "tool chest", "dewalt", "milwaukee", "makita"]
+    subcategories: ["Power Tools", "Hand Tools", "Tool Chests", "Lawn & Garden", "Automotive Tools"]
+  appliances:
+    label: "Appliances"
+    sort_tier: 1
+    keywords: ["washer", "dryer", "fridge", "refrigerator", "microwave", "stove", "air conditioner"]
+    subcategories: ["Kitchen Appliances", "HVAC", "Washers & Dryers", "Small Appliances"]
+  electronics:
+    label: "Electronics"
+    sort_tier: 2
+    keywords: ["tv", "monitor", "projector", "speaker", "computer", "laptop", "camera", "console", "xbox", "playstation"]
+    subcategories: ["TVs & Monitors", "Audio Equipment", "Computers & Tablets", "Gaming Consoles", "Cameras"]
+  sporting_goods:
+    label: "Sporting Goods"
+    sort_tier: 2
+    keywords: ["bike", "bicycle", "scooter", "weights", "exercise", "fishing", "golf", "sport"]
+    subcategories: ["Exercise Equipment", "Bikes & Scooters", "Outdoor Recreation", "Team Sports"]
+  home_goods:
+    label: "Home Goods"
+    sort_tier: 3
+    keywords: ["decor", "lamp", "linens", "kitchenware", "dishes", "cleaning"]
+    subcategories: ["Kitchenware", "Decor", "Lighting", "Linens & Bedding", "Cleaning Supplies"]
+  boxes_totes:
+    label: "Boxes & Totes"
+    sort_tier: 4
+    keywords: ["box", "boxes", "tote", "bin", "container"]
+    subcategories: ["Sealed Boxes", "Open Totes", "Storage Bins"]
+  collectibles:
+    label: "Collectibles & Antiques"
+    sort_tier: 2
+    flag_as_collectible: true
+    keywords: ["collectible", "vintage", "antique", "memorabilia", "art", "figure"]
+    subcategories: ["Vintage Items", "Art", "Memorabilia"]
+  scrap_junk:
+    label: "Scrap & Junk"
+    sort_tier: 5
+    enabled: false
+    keywords: ["scrap", "junk", "broken", "damaged", "parts"]
+    subcategories: ["Metal Scrap", "Parts", "Damaged Items"]

@@ -1,0 +1,43 @@
+connectors_version: "1.0"
+vision_providers:
+  openai:
+    enabled: true
+    api_key_env: "OPENAI_API_KEY"
+    model: "gpt-4o-mini"
+    max_tokens: 1500
+    temperature: 0.0
+  mock:
+    enabled: true
+    description: "Local development provider. Never claim real detection."
+market_connectors:
+  ebay_api:
+    enabled: false
+    auth_method: "oauth"
+    client_id_env: "EBAY_CLIENT_ID"
+    client_secret_env: "EBAY_CLIENT_SECRET"
+    marketplace_id: "EBAY_US"
+    scope: "https://api.ebay.com/oauth/api_scope"
+    endpoints:
+      sold_listings: true
+      active_listings: false
+  tiktok_shop:
+    enabled: false
+    status: "pending_approval"
+  facebook_marketplace:
+    enabled: false
+    status: "pending_approval"
+  whatnot:
+    enabled: false
+    status: "pending_approval"
+url_refresh:
+  enabled: true
+  domains:
+    ebay.com:
+      method: "api"
+      fallback: "disabled_until_allowed"
+      allow_public_html_parse: false
+      rate_limit_rpm: 10
+      cache_ttl_hours: 24
+    facebook.com:
+      method: "disabled"
+      status: "Not supported - login wall / partner endpoint required"

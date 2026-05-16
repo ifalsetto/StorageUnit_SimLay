@@ -1,0 +1,61 @@
+# StorageUnit SimLay — Accuracy-First App Configuration
+app:
+  name: "StorageUnit SimLay"
+  version: "1.0.0"
+  environment: "development"
+
+server:
+  host: "127.0.0.1"
+  port: 8000
+  cors_origins:
+    - "http://localhost:5173"
+    - "http://127.0.0.1:5173"
+
+vision:
+  default_provider: "openai"
+  allow_mock_provider: true
+  max_retries: 3
+  timeout_seconds: 60
+  video:
+    enabled: true
+    extraction_method: "interval"   # interval | scene_based
+    interval_seconds: 1.0
+    max_keyframes: 100
+    scene_threshold: 30.0
+
+evidence:
+  min_comps_required: 3
+  max_variance_ratio: 4.0
+  exclude_bundles: true
+  allow_active_listings: true
+  active_listing_discount_pct: 15
+  url_refresh:
+    enabled: true
+    max_age_days: 30
+    rate_limit_per_domain: 10
+    cache_ttl_hours: 24
+    retry_failed_after_hours: 168
+
+valuation:
+  default_method: "percentile"
+  export_band: "p25"
+  unknown_condition_behavior: "no_adjust" # no_adjust | blank_value | default_used
+  failed_gates_behavior: "blank"
+
+export:
+  handle_prefix: "ITEM"
+  sku_prefix: "FT-GEN"
+  use_run_short: true
+  sequence_padding: 3
+  include_audit_json: true
+  validate_csv_strict: true
+
+storage:
+  uploads_dir: "data/uploads"
+  exports_dir: "data/exports"
+  templates_dir: "data/templates"
+  database_path: "data/simlay.db"
+
+logging:
+  level: "INFO"
+  file_path: "logs/simlay.log"

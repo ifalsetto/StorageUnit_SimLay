@@ -1,0 +1,16 @@
+StorageUnit SimLay is an accuracy-first inventory companion for storage-unit buyers, resellers, and small operators.
+
+Capture photos or walkthrough media, review detected items, add structured price evidence, and export a Wix-compatible product CSV with an audit trail that explains what was known, what was uncertain, and why each item was priced or left blank.
+
+Core features:
+• Photo and video intake workflow
+• Item review with certainty labels
+• Manual evidence locker for sold and active comps
+• Screenshot evidence support
+• Conservative valuation gates
+• Wix CSV export
+• Audit JSON export
+• Config-driven profiles for different projects
+• No silent guessing: unclear items stay uncertain
+
+StorageUnit SimLay is built for defensible resale workflows. The app favors accuracy and auditability over inflated estimates.

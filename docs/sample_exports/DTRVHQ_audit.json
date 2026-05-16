@@ -1,0 +1,1598 @@
+{
+  "run": {
+    "run_id": "8ef2ccb8-8f75-4899-8e1b-ae763003f3ca",
+    "run_short": "DTRVHQ",
+    "created_at": "2026-05-16 15:05:30",
+    "updated_at": "2026-05-16 15:05:30",
+    "profile_name": "default",
+    "profile_snapshot": {
+      "app_config": {
+        "app": {
+          "environment": "development",
+          "name": "StorageUnit SimLay",
+          "version": "1.0.0"
+        },
+        "evidence": {
+          "active_listing_discount_pct": 15,
+          "allow_active_listings": true,
+          "exclude_bundles": true,
+          "max_variance_ratio": 4.0,
+          "min_comps_required": 3,
+          "url_refresh": {
+            "cache_ttl_hours": 24,
+            "enabled": true,
+            "max_age_days": 30,
+            "rate_limit_per_domain": 10,
+            "retry_failed_after_hours": 168
+          }
+        },
+        "export": {
+          "handle_prefix": "ITEM",
+          "include_audit_json": true,
+          "sequence_padding": 3,
+          "sku_prefix": "FT-GEN",
+          "use_run_short": true,
+          "validate_csv_strict": true
+        },
+        "logging": {
+          "file_path": "logs/simlay.log",
+          "level": "INFO"
+        },
+        "server": {
+          "cors_origins": [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173"
+          ],
+          "host": "127.0.0.1",
+          "port": 8000
+        },
+        "storage": {
+          "database_path": "data/simlay.db",
+          "exports_dir": "data/exports",
+          "templates_dir": "data/templates",
+          "uploads_dir": "data/uploads"
+        },
+        "valuation": {
+          "default_method": "percentile",
+          "export_band": "p25",
+          "failed_gates_behavior": "blank",
+          "unknown_condition_behavior": "no_adjust"
+        },
+        "vision": {
+          "allow_mock_provider": true,
+          "default_provider": "openai",
+          "max_retries": 3,
+          "timeout_seconds": 60,
+          "video": {
+            "enabled": true,
+            "extraction_method": "interval",
+            "interval_seconds": 1.0,
+            "max_keyframes": 100,
+            "scene_threshold": 30.0
+          }
+        }
+      },
+      "confidence_rules": {
+        "allowed_conditions": [
+          "New",
+          "Like New",
+          "Used",
+          "Fair",
+          "Parts",
+          "Unknown"
+        ],
+        "allowed_confidence": [
+          "Verified",
+          "Inferred",
+          "Unknown"
+        ],
+        "confidence_version": "1.0",
+        "downgrades": [
+          {
+            "action": "Maximum confidence = Inferred",
+            "condition": "No brand detected by vision"
+          },
+          {
+            "action": "Confidence = Inferred or Unknown",
+            "condition": "Multiple items grouped together"
+          },
+          {
+            "action": "Confidence = Unknown",
+            "condition": "Item in sealed container"
+          }
+        ],
+        "rules": {
+          "inferred": {
+            "criteria": [
+              "Item type identifiable",
+              "General category obvious",
+              "No specific brand/model visible"
+            ],
+            "description": "Clear item type, no model certainty"
+          },
+          "unknown": {
+            "criteria": [
+              "Item heavily obscured",
+              "Multiple items bundled together without clear separation",
+              "Sealed boxes/containers",
+              "Image too blurry or dark"
+            ],
+            "description": "Obscured, bundled, boxed, or unclear"
+          },
+          "verified": {
+            "criteria": [
+              "Brand name visible in image",
+              "Model number/name visible",
+              "Unique identifying features present"
+            ],
+            "description": "Clear model/brand/identifier visible"
+          }
+        }
+      },
+      "connectors": {
+        "connectors_version": "1.0",
+        "market_connectors": {
+          "ebay_api": {
+            "auth_method": "oauth",
+            "credentials_env": "EBAY_CLIENT_ID",
+            "enabled": false,
+            "endpoints": {
+              "active_listings": false,
+              "sold_listings": true
+            }
+          },
+          "facebook_marketplace": {
+            "enabled": false,
+            "status": "pending_approval"
+          },
+          "tiktok_shop": {
+            "enabled": false,
+            "status": "pending_approval"
+          },
+          "whatnot": {
+            "enabled": false,
+            "status": "pending_approval"
+          }
+        },
+        "url_refresh": {
+          "domains": {
+            "ebay.com": {
+              "cache_ttl_hours": 24,
+              "fallback": "disabled_until_allowed",
+              "method": "api",
+              "rate_limit_rpm": 10
+            },
+            "facebook.com": {
+              "method": "disabled",
+              "status": "Not supported - login wall / partner endpoint required"
+            }
+          },
+          "enabled": true
+        },
+        "vision_providers": {
+          "mock": {
+            "description": "Local development provider. Never claim real detection.",
+            "enabled": true
+          },
+          "openai": {
+            "api_key_env": "OPENAI_API_KEY",
+            "enabled": true,
+            "max_tokens": 1500,
+            "model": "gpt-4o-mini",
+            "temperature": 0.0
+          }
+        }
+      },
+      "dedupe_rules": {
+        "dedupe_version": "1.0",
+        "grouping": {
+          "boxes_totes": {
+            "contents_handling": "unknown",
+            "treat_as_single_item": true
+          },
+          "small_indistinct_objects": {
+            "enabled": true,
+            "group_as": "Small items lot",
+            "max_individual_size_percent": 5
+          }
+        },
+        "quantity_rules": {
+          "require_visual_confirmation": true
+        },
+        "strategies": {
+          "name_matching": {
+            "enabled": true,
+            "method": "fuzzy",
+            "threshold": 0.9
+          },
+          "spatial_tracking": {
+            "enabled": true,
+            "max_movement_pixels": 100
+          },
+          "visual_similarity": {
+            "enabled": true,
+            "threshold": 0.85
+          }
+        }
+      },
+      "profile": {
+        "description": "Default StorageUnit SimLay configuration",
+        "inherits_from": null,
+        "metadata": {
+          "created_at": "2026-02-03T00:00:00Z",
+          "created_by": "FalseTech",
+          "notes": "Baseline configuration for new projects",
+          "wix_site_url": null
+        },
+        "overrides": {
+          "export": {
+            "handle_prefix": "ITEM",
+            "sku_prefix": "FT-GEN"
+          },
+          "taxonomy": {
+            "categories": {
+              "scrap_junk": {
+                "enabled": false
+              }
+            }
+          },
+          "valuation": {
+            "evidence_gates": {
+              "min_comps": 3
+            }
+          }
+        },
+        "profile_name": "default",
+        "profile_version": "1.0",
+        "remote_profile_url": null
+      },
+      "taxonomy": {
+        "categories": {
+          "appliances": {
+            "keywords": [
+              "washer",
+              "dryer",
+              "fridge",
+              "refrigerator",
+              "microwave",
+              "stove",
+              "air conditioner"
+            ],
+            "label": "Appliances",
+            "sort_tier": 1,
+            "subcategories": [
+              "Kitchen Appliances",
+              "HVAC",
+              "Washers & Dryers",
+              "Small Appliances"
+            ]
+          },
+          "boxes_totes": {
+            "keywords": [
+              "box",
+              "boxes",
+              "tote",
+              "bin",
+              "container"
+            ],
+            "label": "Boxes & Totes",
+            "sort_tier": 4,
+            "subcategories": [
+              "Sealed Boxes",
+              "Open Totes",
+              "Storage Bins"
+            ]
+          },
+          "collectibles": {
+            "flag_as_collectible": true,
+            "keywords": [
+              "collectible",
+              "vintage",
+              "antique",
+              "memorabilia",
+              "art",
+              "figure"
+            ],
+            "label": "Collectibles & Antiques",
+            "sort_tier": 2,
+            "subcategories": [
+              "Vintage Items",
+              "Art",
+              "Memorabilia"
+            ]
+          },
+          "electronics": {
+            "keywords": [
+              "tv",
+              "monitor",
+              "projector",
+              "speaker",
+              "computer",
+              "laptop",
+              "camera",
+              "console",
+              "xbox",
+              "playstation"
+            ],
+            "label": "Electronics",
+            "sort_tier": 2,
+            "subcategories": [
+              "TVs & Monitors",
+              "Audio Equipment",
+              "Computers & Tablets",
+              "Gaming Consoles",
+              "Cameras"
+            ]
+          },
+          "furniture": {
+            "keywords": [
+              "chair",
+              "table",
+              "desk",
+              "sofa",
+              "couch",
+              "cabinet",
+              "dresser",
+              "shelf",
+              "bed"
+            ],
+            "label": "Furniture",
+            "sort_tier": 1,
+            "subcategories": [
+              "Chairs & Seating",
+              "Tables & Desks",
+              "Storage & Cabinets",
+              "Beds & Mattresses",
+              "Shelving"
+            ]
+          },
+          "home_goods": {
+            "keywords": [
+              "decor",
+              "lamp",
+              "linens",
+              "kitchenware",
+              "dishes",
+              "cleaning"
+            ],
+            "label": "Home Goods",
+            "sort_tier": 3,
+            "subcategories": [
+              "Kitchenware",
+              "Decor",
+              "Lighting",
+              "Linens & Bedding",
+              "Cleaning Supplies"
+            ]
+          },
+          "scrap_junk": {
+            "enabled": false,
+            "keywords": [
+              "scrap",
+              "junk",
+              "broken",
+              "damaged",
+              "parts"
+            ],
+            "label": "Scrap & Junk",
+            "sort_tier": 5,
+            "subcategories": [
+              "Metal Scrap",
+              "Parts",
+              "Damaged Items"
+            ]
+          },
+          "sporting_goods": {
+            "keywords": [
+              "bike",
+              "bicycle",
+              "scooter",
+              "weights",
+              "exercise",
+              "fishing",
+              "golf",
+              "sport"
+            ],
+            "label": "Sporting Goods",
+            "sort_tier": 2,
+            "subcategories": [
+              "Exercise Equipment",
+              "Bikes & Scooters",
+              "Outdoor Recreation",
+              "Team Sports"
+            ]
+          },
+          "tools": {
+            "keywords": [
+              "tool",
+              "drill",
+              "saw",
+              "wrench",
+              "socket",
+              "tool chest",
+              "dewalt",
+              "milwaukee",
+              "makita"
+            ],
+            "label": "Tools & Equipment",
+            "sort_tier": 1,
+            "subcategories": [
+              "Power Tools",
+              "Hand Tools",
+              "Tool Chests",
+              "Lawn & Garden",
+              "Automotive Tools"
+            ]
+          }
+        },
+        "taxonomy_version": "1.0"
+      },
+      "valuation_rules": {
+        "bands": {
+          "filter_outliers_first": true,
+          "method": "percentile",
+          "percentiles": [
+            25,
+            50,
+            75
+          ]
+        },
+        "condition_multipliers": {
+          "Fair": 0.5,
+          "Like New": 0.85,
+          "New": 1.0,
+          "Parts": 0.25,
+          "Unknown": null,
+          "Used": 0.7
+        },
+        "confidence_methods": {
+          "Inferred": {
+            "condition_adjustment": false,
+            "method": "percentile",
+            "percentile": 30
+          },
+          "Unknown": {
+            "bulk_lot_percentile": 10,
+            "fallback_enabled": false,
+            "method": "none"
+          },
+          "Verified": {
+            "condition_adjustment": true,
+            "method": "percentile",
+            "percentile": 50
+          }
+        },
+        "evidence_gates": {
+          "max_comp_age_days": 365,
+          "max_variance_ratio": 4.0,
+          "min_comps": 3,
+          "require_sold_comps": false
+        },
+        "evidence_types": {
+          "active_listings": {
+            "allowed": true,
+            "discount_pct": 15,
+            "fallback_only": true,
+            "min_active_for_fallback": 5
+          },
+          "sold_listings": {
+            "preferred": true,
+            "weight": 1.0
+          }
+        },
+        "export": {
+          "default_band": "p25",
+          "failed_gates_behavior": "blank",
+          "round_to": 0
+        },
+        "fallback_rules": {
+          "no_sold_comps": {
+            "active_percentile": 20,
+            "require_conservative": true,
+            "use_active": true
+          }
+        },
+        "outlier_detection": {
+          "enabled": true,
+          "iqr_multiplier": 1.5,
+          "method": "iqr"
+        },
+        "unknown_condition_behavior": "no_adjust",
+        "valuation_version": "1.0"
+      },
+      "wix_schema": {
+        "defaults": {
+          "Cost": "",
+          "SuggestedPrice": "",
+          "barcode": "",
+          "baseUnit": "",
+          "baseUnitMeasurement": "",
+          "modifierCharLimit1": "",
+          "modifierCharLimit10": "",
+          "modifierCharLimit2": "",
+          "modifierCharLimit3": "",
+          "modifierCharLimit4": "",
+          "modifierCharLimit5": "",
+          "modifierCharLimit6": "",
+          "modifierCharLimit7": "",
+          "modifierCharLimit8": "",
+          "modifierCharLimit9": "",
+          "modifierDescription1": "",
+          "modifierDescription10": "",
+          "modifierDescription2": "",
+          "modifierDescription3": "",
+          "modifierDescription4": "",
+          "modifierDescription5": "",
+          "modifierDescription6": "",
+          "modifierDescription7": "",
+          "modifierDescription8": "",
+          "modifierDescription9": "",
+          "modifierMandatory1": "",
+          "modifierMandatory10": "",
+          "modifierMandatory2": "",
+          "modifierMandatory3": "",
+          "modifierMandatory4": "",
+          "modifierMandatory5": "",
+          "modifierMandatory6": "",
+          "modifierMandatory7": "",
+          "modifierMandatory8": "",
+          "modifierMandatory9": "",
+          "modifierName1": "",
+          "modifierName10": "",
+          "modifierName2": "",
+          "modifierName3": "",
+          "modifierName4": "",
+          "modifierName5": "",
+          "modifierName6": "",
+          "modifierName7": "",
+          "modifierName8": "",
+          "modifierName9": "",
+          "modifierType1": "",
+          "modifierType10": "",
+          "modifierType2": "",
+          "modifierType3": "",
+          "modifierType4": "",
+          "modifierType5": "",
+          "modifierType6": "",
+          "modifierType7": "",
+          "modifierType8": "",
+          "modifierType9": "",
+          "preOrderEnabled": "",
+          "preOrderLimit": "",
+          "preOrderMessage": "",
+          "productOptionChoices1": "",
+          "productOptionChoices2": "",
+          "productOptionChoices3": "",
+          "productOptionChoices4": "",
+          "productOptionChoices5": "",
+          "productOptionChoices6": "",
+          "productOptionName1": "",
+          "productOptionName2": "",
+          "productOptionName3": "",
+          "productOptionName4": "",
+          "productOptionName5": "",
+          "productOptionName6": "",
+          "productOptionType1": "",
+          "productOptionType2": "",
+          "productOptionType3": "",
+          "productOptionType4": "",
+          "productOptionType5": "",
+          "productOptionType6": "",
+          "ribbon": "",
+          "strikethroughPrice": "",
+          "totalUnits": "",
+          "totalUnitsMeasurement": "",
+          "weight": ""
+        },
+        "description": "Auto-generated from Master_Inventory.csv headers. Replace template and rerun scripts/generate_wix_schema.py to match another Wix project.",
+        "field_mappings": {
+          "Brand": {
+            "condition": "confidence == 'Verified'",
+            "required": false,
+            "source": "brand"
+          },
+          "Name": {
+            "required": true,
+            "source": "final_name"
+          },
+          "Price": {
+            "format": "{:.0f}",
+            "required": false,
+            "source": "value_export"
+          },
+          "SKU (auto)": {
+            "required": true,
+            "source": "wix_sku"
+          },
+          "Visible": {
+            "required": true,
+            "source": "constant",
+            "value": "TRUE"
+          },
+          "fieldType": {
+            "required": true,
+            "source": "constant",
+            "value": "PRODUCT"
+          },
+          "handle": {
+            "required": true,
+            "source": "wix_handle"
+          },
+          "inventory": {
+            "required": false,
+            "source": "quantity"
+          },
+          "media": {
+            "required": false,
+            "source": "public_media_url"
+          },
+          "mediaAltText": {
+            "required": false,
+            "source": "final_name"
+          },
+          "plainDescription": {
+            "fallback": "Pre-owned item. Honest condition. See photos for details.",
+            "required": true,
+            "source": "template",
+            "template": "Pre-owned {visible_condition}. {notes}"
+          }
+        },
+        "required_headers": [
+          "handle",
+          "fieldType",
+          "Name",
+          "Visible",
+          "plainDescription",
+          "media",
+          "mediaAltText",
+          "ribbon",
+          "Brand",
+          "Price",
+          "Cost",
+          "SuggestedPrice",
+          "strikethroughPrice",
+          "baseUnit",
+          "baseUnitMeasurement",
+          "totalUnits",
+          "totalUnitsMeasurement",
+          "inventory",
+          "preOrderEnabled",
+          "preOrderMessage",
+          "preOrderLimit",
+          "SKU (auto)",
+          "barcode",
+          "weight",
+          "productOptionName1",
+          "productOptionType1",
+          "productOptionChoices1",
+          "productOptionName2",
+          "productOptionType2",
+          "productOptionChoices2",
+          "productOptionName3",
+          "productOptionType3",
+          "productOptionChoices3",
+          "productOptionName4",
+          "productOptionType4",
+          "productOptionChoices4",
+          "productOptionName5",
+          "productOptionType5",
+          "productOptionChoices5",
+          "productOptionName6",
+          "productOptionType6",
+          "productOptionChoices6",
+          "modifierName1",
+          "modifierType1",
+          "modifierCharLimit1",
+          "modifierMandatory1",
+          "modifierDescription1",
+          "modifierName2",
+          "modifierType2",
+          "modifierCharLimit2",
+          "modifierMandatory2",
+          "modifierDescription2",
+          "modifierName3",
+          "modifierType3",
+          "modifierCharLimit3",
+          "modifierMandatory3",
+          "modifierDescription3",
+          "modifierName4",
+          "modifierType4",
+          "modifierCharLimit4",
+          "modifierMandatory4",
+          "modifierDescription4",
+          "modifierName5",
+          "modifierType5",
+          "modifierCharLimit5",
+          "modifierMandatory5",
+          "modifierDescription5",
+          "modifierName6",
+          "modifierType6",
+          "modifierCharLimit6",
+          "modifierMandatory6",
+          "modifierDescription6",
+          "modifierName7",
+          "modifierType7",
+          "modifierCharLimit7",
+          "modifierMandatory7",
+          "modifierDescription7",
+          "modifierName8",
+          "modifierType8",
+          "modifierCharLimit8",
+          "modifierMandatory8",
+          "modifierDescription8",
+          "modifierName9",
+          "modifierType9",
+          "modifierCharLimit9",
+          "modifierMandatory9",
+          "modifierDescription9",
+          "modifierName10",
+          "modifierType10",
+          "modifierCharLimit10",
+          "modifierMandatory10",
+          "modifierDescription10"
+        ],
+        "schema_version": "1.0",
+        "template_source": "data/templates/Master_Inventory.csv"
+      }
+    },
+    "media_type": "photos",
+    "media_count": 0,
+    "status": "completed",
+    "total_items": 1,
+    "total_verified": 0,
+    "total_inferred": 0,
+    "total_unknown": 0,
+    "csv_exported_at": "2026-05-16 15:05:35",
+    "audit_exported_at": null,
+    "errors": "[]",
+    "warnings": "[]"
+  },
+  "config_snapshot": {
+    "app_config": {
+      "app": {
+        "environment": "development",
+        "name": "StorageUnit SimLay",
+        "version": "1.0.0"
+      },
+      "evidence": {
+        "active_listing_discount_pct": 15,
+        "allow_active_listings": true,
+        "exclude_bundles": true,
+        "max_variance_ratio": 4.0,
+        "min_comps_required": 3,
+        "url_refresh": {
+          "cache_ttl_hours": 24,
+          "enabled": true,
+          "max_age_days": 30,
+          "rate_limit_per_domain": 10,
+          "retry_failed_after_hours": 168
+        }
+      },
+      "export": {
+        "handle_prefix": "ITEM",
+        "include_audit_json": true,
+        "sequence_padding": 3,
+        "sku_prefix": "FT-GEN",
+        "use_run_short": true,
+        "validate_csv_strict": true
+      },
+      "logging": {
+        "file_path": "logs/simlay.log",
+        "level": "INFO"
+      },
+      "server": {
+        "cors_origins": [
+          "http://localhost:5173",
+          "http://127.0.0.1:5173"
+        ],
+        "host": "127.0.0.1",
+        "port": 8000
+      },
+      "storage": {
+        "database_path": "data/simlay.db",
+        "exports_dir": "data/exports",
+        "templates_dir": "data/templates",
+        "uploads_dir": "data/uploads"
+      },
+      "valuation": {
+        "default_method": "percentile",
+        "export_band": "p25",
+        "failed_gates_behavior": "blank",
+        "unknown_condition_behavior": "no_adjust"
+      },
+      "vision": {
+        "allow_mock_provider": true,
+        "default_provider": "openai",
+        "max_retries": 3,
+        "timeout_seconds": 60,
+        "video": {
+          "enabled": true,
+          "extraction_method": "interval",
+          "interval_seconds": 1.0,
+          "max_keyframes": 100,
+          "scene_threshold": 30.0
+        }
+      }
+    },
+    "confidence_rules": {
+      "allowed_conditions": [
+        "New",
+        "Like New",
+        "Used",
+        "Fair",
+        "Parts",
+        "Unknown"
+      ],
+      "allowed_confidence": [
+        "Verified",
+        "Inferred",
+        "Unknown"
+      ],
+      "confidence_version": "1.0",
+      "downgrades": [
+        {
+          "action": "Maximum confidence = Inferred",
+          "condition": "No brand detected by vision"
+        },
+        {
+          "action": "Confidence = Inferred or Unknown",
+          "condition": "Multiple items grouped together"
+        },
+        {
+          "action": "Confidence = Unknown",
+          "condition": "Item in sealed container"
+        }
+      ],
+      "rules": {
+        "inferred": {
+          "criteria": [
+            "Item type identifiable",
+            "General category obvious",
+            "No specific brand/model visible"
+          ],
+          "description": "Clear item type, no model certainty"
+        },
+        "unknown": {
+          "criteria": [
+            "Item heavily obscured",
+            "Multiple items bundled together without clear separation",
+            "Sealed boxes/containers",
+            "Image too blurry or dark"
+          ],
+          "description": "Obscured, bundled, boxed, or unclear"
+        },
+        "verified": {
+          "criteria": [
+            "Brand name visible in image",
+            "Model number/name visible",
+            "Unique identifying features present"
+          ],
+          "description": "Clear model/brand/identifier visible"
+        }
+      }
+    },
+    "connectors": {
+      "connectors_version": "1.0",
+      "market_connectors": {
+        "ebay_api": {
+          "auth_method": "oauth",
+          "credentials_env": "EBAY_CLIENT_ID",
+          "enabled": false,
+          "endpoints": {
+            "active_listings": false,
+            "sold_listings": true
+          }
+        },
+        "facebook_marketplace": {
+          "enabled": false,
+          "status": "pending_approval"
+        },
+        "tiktok_shop": {
+          "enabled": false,
+          "status": "pending_approval"
+        },
+        "whatnot": {
+          "enabled": false,
+          "status": "pending_approval"
+        }
+      },
+      "url_refresh": {
+        "domains": {
+          "ebay.com": {
+            "cache_ttl_hours": 24,
+            "fallback": "disabled_until_allowed",
+            "method": "api",
+            "rate_limit_rpm": 10
+          },
+          "facebook.com": {
+            "method": "disabled",
+            "status": "Not supported - login wall / partner endpoint required"
+          }
+        },
+        "enabled": true
+      },
+      "vision_providers": {
+        "mock": {
+          "description": "Local development provider. Never claim real detection.",
+          "enabled": true
+        },
+        "openai": {
+          "api_key_env": "OPENAI_API_KEY",
+          "enabled": true,
+          "max_tokens": 1500,
+          "model": "gpt-4o-mini",
+          "temperature": 0.0
+        }
+      }
+    },
+    "dedupe_rules": {
+      "dedupe_version": "1.0",
+      "grouping": {
+        "boxes_totes": {
+          "contents_handling": "unknown",
+          "treat_as_single_item": true
+        },
+        "small_indistinct_objects": {
+          "enabled": true,
+          "group_as": "Small items lot",
+          "max_individual_size_percent": 5
+        }
+      },
+      "quantity_rules": {
+        "require_visual_confirmation": true
+      },
+      "strategies": {
+        "name_matching": {
+          "enabled": true,
+          "method": "fuzzy",
+          "threshold": 0.9
+        },
+        "spatial_tracking": {
+          "enabled": true,
+          "max_movement_pixels": 100
+        },
+        "visual_similarity": {
+          "enabled": true,
+          "threshold": 0.85
+        }
+      }
+    },
+    "profile": {
+      "description": "Default StorageUnit SimLay configuration",
+      "inherits_from": null,
+      "metadata": {
+        "created_at": "2026-02-03T00:00:00Z",
+        "created_by": "FalseTech",
+        "notes": "Baseline configuration for new projects",
+        "wix_site_url": null
+      },
+      "overrides": {
+        "export": {
+          "handle_prefix": "ITEM",
+          "sku_prefix": "FT-GEN"
+        },
+        "taxonomy": {
+          "categories": {
+            "scrap_junk": {
+              "enabled": false
+            }
+          }
+        },
+        "valuation": {
+          "evidence_gates": {
+            "min_comps": 3
+          }
+        }
+      },
+      "profile_name": "default",
+      "profile_version": "1.0",
+      "remote_profile_url": null
+    },
+    "taxonomy": {
+      "categories": {
+        "appliances": {
+          "keywords": [
+            "washer",
+            "dryer",
+            "fridge",
+            "refrigerator",
+            "microwave",
+            "stove",
+            "air conditioner"
+          ],
+          "label": "Appliances",
+          "sort_tier": 1,
+          "subcategories": [
+            "Kitchen Appliances",
+            "HVAC",
+            "Washers & Dryers",
+            "Small Appliances"
+          ]
+        },
+        "boxes_totes": {
+          "keywords": [
+            "box",
+            "boxes",
+            "tote",
+            "bin",
+            "container"
+          ],
+          "label": "Boxes & Totes",
+          "sort_tier": 4,
+          "subcategories": [
+            "Sealed Boxes",
+            "Open Totes",
+            "Storage Bins"
+          ]
+        },
+        "collectibles": {
+          "flag_as_collectible": true,
+          "keywords": [
+            "collectible",
+            "vintage",
+            "antique",
+            "memorabilia",
+            "art",
+            "figure"
+          ],
+          "label": "Collectibles & Antiques",
+          "sort_tier": 2,
+          "subcategories": [
+            "Vintage Items",
+            "Art",
+            "Memorabilia"
+          ]
+        },
+        "electronics": {
+          "keywords": [
+            "tv",
+            "monitor",
+            "projector",
+            "speaker",
+            "computer",
+            "laptop",
+            "camera",
+            "console",
+            "xbox",
+            "playstation"
+          ],
+          "label": "Electronics",
+          "sort_tier": 2,
+          "subcategories": [
+            "TVs & Monitors",
+            "Audio Equipment",
+            "Computers & Tablets",
+            "Gaming Consoles",
+            "Cameras"
+          ]
+        },
+        "furniture": {
+          "keywords": [
+            "chair",
+            "table",
+            "desk",
+            "sofa",
+            "couch",
+            "cabinet",
+            "dresser",
+            "shelf",
+            "bed"
+          ],
+          "label": "Furniture",
+          "sort_tier": 1,
+          "subcategories": [
+            "Chairs & Seating",
+            "Tables & Desks",
+            "Storage & Cabinets",
+            "Beds & Mattresses",
+            "Shelving"
+          ]
+        },
+        "home_goods": {
+          "keywords": [
+            "decor",
+            "lamp",
+            "linens",
+            "kitchenware",
+            "dishes",
+            "cleaning"
+          ],
+          "label": "Home Goods",
+          "sort_tier": 3,
+          "subcategories": [
+            "Kitchenware",
+            "Decor",
+            "Lighting",
+            "Linens & Bedding",
+            "Cleaning Supplies"
+          ]
+        },
+        "scrap_junk": {
+          "enabled": false,
+          "keywords": [
+            "scrap",
+            "junk",
+            "broken",
+            "damaged",
+            "parts"
+          ],
+          "label": "Scrap & Junk",
+          "sort_tier": 5,
+          "subcategories": [
+            "Metal Scrap",
+            "Parts",
+            "Damaged Items"
+          ]
+        },
+        "sporting_goods": {
+          "keywords": [
+            "bike",
+            "bicycle",
+            "scooter",
+            "weights",
+            "exercise",
+            "fishing",
+            "golf",
+            "sport"
+          ],
+          "label": "Sporting Goods",
+          "sort_tier": 2,
+          "subcategories": [
+            "Exercise Equipment",
+            "Bikes & Scooters",
+            "Outdoor Recreation",
+            "Team Sports"
+          ]
+        },
+        "tools": {
+          "keywords": [
+            "tool",
+            "drill",
+            "saw",
+            "wrench",
+            "socket",
+            "tool chest",
+            "dewalt",
+            "milwaukee",
+            "makita"
+          ],
+          "label": "Tools & Equipment",
+          "sort_tier": 1,
+          "subcategories": [
+            "Power Tools",
+            "Hand Tools",
+            "Tool Chests",
+            "Lawn & Garden",
+            "Automotive Tools"
+          ]
+        }
+      },
+      "taxonomy_version": "1.0"
+    },
+    "valuation_rules": {
+      "bands": {
+        "filter_outliers_first": true,
+        "method": "percentile",
+        "percentiles": [
+          25,
+          50,
+          75
+        ]
+      },
+      "condition_multipliers": {
+        "Fair": 0.5,
+        "Like New": 0.85,
+        "New": 1.0,
+        "Parts": 0.25,
+        "Unknown": null,
+        "Used": 0.7
+      },
+      "confidence_methods": {
+        "Inferred": {
+          "condition_adjustment": false,
+          "method": "percentile",
+          "percentile": 30
+        },
+        "Unknown": {
+          "bulk_lot_percentile": 10,
+          "fallback_enabled": false,
+          "method": "none"
+        },
+        "Verified": {
+          "condition_adjustment": true,
+          "method": "percentile",
+          "percentile": 50
+        }
+      },
+      "evidence_gates": {
+        "max_comp_age_days": 365,
+        "max_variance_ratio": 4.0,
+        "min_comps": 3,
+        "require_sold_comps": false
+      },
+      "evidence_types": {
+        "active_listings": {
+          "allowed": true,
+          "discount_pct": 15,
+          "fallback_only": true,
+          "min_active_for_fallback": 5
+        },
+        "sold_listings": {
+          "preferred": true,
+          "weight": 1.0
+        }
+      },
+      "export": {
+        "default_band": "p25",
+        "failed_gates_behavior": "blank",
+        "round_to": 0
+      },
+      "fallback_rules": {
+        "no_sold_comps": {
+          "active_percentile": 20,
+          "require_conservative": true,
+          "use_active": true
+        }
+      },
+      "outlier_detection": {
+        "enabled": true,
+        "iqr_multiplier": 1.5,
+        "method": "iqr"
+      },
+      "unknown_condition_behavior": "no_adjust",
+      "valuation_version": "1.0"
+    },
+    "wix_schema": {
+      "defaults": {
+        "Cost": "",
+        "SuggestedPrice": "",
+        "barcode": "",
+        "baseUnit": "",
+        "baseUnitMeasurement": "",
+        "modifierCharLimit1": "",
+        "modifierCharLimit10": "",
+        "modifierCharLimit2": "",
+        "modifierCharLimit3": "",
+        "modifierCharLimit4": "",
+        "modifierCharLimit5": "",
+        "modifierCharLimit6": "",
+        "modifierCharLimit7": "",
+        "modifierCharLimit8": "",
+        "modifierCharLimit9": "",
+        "modifierDescription1": "",
+        "modifierDescription10": "",
+        "modifierDescription2": "",
+        "modifierDescription3": "",
+        "modifierDescription4": "",
+        "modifierDescription5": "",
+        "modifierDescription6": "",
+        "modifierDescription7": "",
+        "modifierDescription8": "",
+        "modifierDescription9": "",
+        "modifierMandatory1": "",
+        "modifierMandatory10": "",
+        "modifierMandatory2": "",
+        "modifierMandatory3": "",
+        "modifierMandatory4": "",
+        "modifierMandatory5": "",
+        "modifierMandatory6": "",
+        "modifierMandatory7": "",
+        "modifierMandatory8": "",
+        "modifierMandatory9": "",
+        "modifierName1": "",
+        "modifierName10": "",
+        "modifierName2": "",
+        "modifierName3": "",
+        "modifierName4": "",
+        "modifierName5": "",
+        "modifierName6": "",
+        "modifierName7": "",
+        "modifierName8": "",
+        "modifierName9": "",
+        "modifierType1": "",
+        "modifierType10": "",
+        "modifierType2": "",
+        "modifierType3": "",
+        "modifierType4": "",
+        "modifierType5": "",
+        "modifierType6": "",
+        "modifierType7": "",
+        "modifierType8": "",
+        "modifierType9": "",
+        "preOrderEnabled": "",
+        "preOrderLimit": "",
+        "preOrderMessage": "",
+        "productOptionChoices1": "",
+        "productOptionChoices2": "",
+        "productOptionChoices3": "",
+        "productOptionChoices4": "",
+        "productOptionChoices5": "",
+        "productOptionChoices6": "",
+        "productOptionName1": "",
+        "productOptionName2": "",
+        "productOptionName3": "",
+        "productOptionName4": "",
+        "productOptionName5": "",
+        "productOptionName6": "",
+        "productOptionType1": "",
+        "productOptionType2": "",
+        "productOptionType3": "",
+        "productOptionType4": "",
+        "productOptionType5": "",
+        "productOptionType6": "",
+        "ribbon": "",
+        "strikethroughPrice": "",
+        "totalUnits": "",
+        "totalUnitsMeasurement": "",
+        "weight": ""
+      },
+      "description": "Auto-generated from Master_Inventory.csv headers. Replace template and rerun scripts/generate_wix_schema.py to match another Wix project.",
+      "field_mappings": {
+        "Brand": {
+          "condition": "confidence == 'Verified'",
+          "required": false,
+          "source": "brand"
+        },
+        "Name": {
+          "required": true,
+          "source": "final_name"
+        },
+        "Price": {
+          "format": "{:.0f}",
+          "required": false,
+          "source": "value_export"
+        },
+        "SKU (auto)": {
+          "required": true,
+          "source": "wix_sku"
+        },
+        "Visible": {
+          "required": true,
+          "source": "constant",
+          "value": "TRUE"
+        },
+        "fieldType": {
+          "required": true,
+          "source": "constant",
+          "value": "PRODUCT"
+        },
+        "handle": {
+          "required": true,
+          "source": "wix_handle"
+        },
+        "inventory": {
+          "required": false,
+          "source": "quantity"
+        },
+        "media": {
+          "required": false,
+          "source": "public_media_url"
+        },
+        "mediaAltText": {
+          "required": false,
+          "source": "final_name"
+        },
+        "plainDescription": {
+          "fallback": "Pre-owned item. Honest condition. See photos for details.",
+          "required": true,
+          "source": "template",
+          "template": "Pre-owned {visible_condition}. {notes}"
+        }
+      },
+      "required_headers": [
+        "handle",
+        "fieldType",
+        "Name",
+        "Visible",
+        "plainDescription",
+        "media",
+        "mediaAltText",
+        "ribbon",
+        "Brand",
+        "Price",
+        "Cost",
+        "SuggestedPrice",
+        "strikethroughPrice",
+        "baseUnit",
+        "baseUnitMeasurement",
+        "totalUnits",
+        "totalUnitsMeasurement",
+        "inventory",
+        "preOrderEnabled",
+        "preOrderMessage",
+        "preOrderLimit",
+        "SKU (auto)",
+        "barcode",
+        "weight",
+        "productOptionName1",
+        "productOptionType1",
+        "productOptionChoices1",
+        "productOptionName2",
+        "productOptionType2",
+        "productOptionChoices2",
+        "productOptionName3",
+        "productOptionType3",
+        "productOptionChoices3",
+        "productOptionName4",
+        "productOptionType4",
+        "productOptionChoices4",
+        "productOptionName5",
+        "productOptionType5",
+        "productOptionChoices5",
+        "productOptionName6",
+        "productOptionType6",
+        "productOptionChoices6",
+        "modifierName1",
+        "modifierType1",
+        "modifierCharLimit1",
+        "modifierMandatory1",
+        "modifierDescription1",
+        "modifierName2",
+        "modifierType2",
+        "modifierCharLimit2",
+        "modifierMandatory2",
+        "modifierDescription2",
+        "modifierName3",
+        "modifierType3",
+        "modifierCharLimit3",
+        "modifierMandatory3",
+        "modifierDescription3",
+        "modifierName4",
+        "modifierType4",
+        "modifierCharLimit4",
+        "modifierMandatory4",
+        "modifierDescription4",
+        "modifierName5",
+        "modifierType5",
+        "modifierCharLimit5",
+        "modifierMandatory5",
+        "modifierDescription5",
+        "modifierName6",
+        "modifierType6",
+        "modifierCharLimit6",
+        "modifierMandatory6",
+        "modifierDescription6",
+        "modifierName7",
+        "modifierType7",
+        "modifierCharLimit7",
+        "modifierMandatory7",
+        "modifierDescription7",
+        "modifierName8",
+        "modifierType8",
+        "modifierCharLimit8",
+        "modifierMandatory8",
+        "modifierDescription8",
+        "modifierName9",
+        "modifierType9",
+        "modifierCharLimit9",
+        "modifierMandatory9",
+        "modifierDescription9",
+        "modifierName10",
+        "modifierType10",
+        "modifierCharLimit10",
+        "modifierMandatory10",
+        "modifierDescription10"
+      ],
+      "schema_version": "1.0",
+      "template_source": "data/templates/Master_Inventory.csv"
+    }
+  },
+  "media_inputs": [],
+  "items": [
+    {
+      "item_id": "item_85160b3d-3263-4095-bb78-b4e90bf47113",
+      "run_id": "8ef2ccb8-8f75-4899-8e1b-ae763003f3ca",
+      "raw_name": null,
+      "final_name": "RAGU Projector",
+      "normalized_name": "ragu projector",
+      "brand": null,
+      "category": "Electronics",
+      "subcategory": null,
+      "quantity": 1,
+      "visible_condition": "Used",
+      "confidence": "Inferred",
+      "confidence_reason": "Item type known, exact model not visually verified in sample seed.",
+      "source": "User Visual",
+      "notes": "Similar model, tested working, no remote",
+      "representative_image_id": null,
+      "detected_in_media": [],
+      "flag_unknown": 0,
+      "flag_duplicate_suspect": 0,
+      "flag_missing_comps": 0,
+      "flag_high_variance": 0,
+      "flag_possible_collectible": 0,
+      "sort_tier": 2,
+      "sort_order": 1,
+      "value_p25": 31.0,
+      "value_p50": 32.0,
+      "value_p75": 33.5,
+      "value_export": 31.0,
+      "value_source": "sold_p30",
+      "valuation_passed_gates": 1,
+      "wix_handle": "ITEM-DTRVHQ-001",
+      "wix_sku": "FT-GEN-DTRVHQ-001",
+      "wix_exported": 1,
+      "created_at": "2026-05-16 15:05:30",
+      "updated_at": "2026-05-16 15:05:30",
+      "evidence": [
+        {
+          "evidence_id": "evidence_b72911ad-aadf-458a-b3b9-86bde6034376",
+          "item_id": "item_85160b3d-3263-4095-bb78-b4e90bf47113",
+          "source_type": "url",
+          "source_name": "user_url",
+          "url": "https://example.com/ebay-sold-comp",
+          "url_title": null,
+          "url_platform": "ebay",
+          "screenshot_path": null,
+          "price": 32.0,
+          "currency": "USD",
+          "condition": null,
+          "sale_date": null,
+          "listing_type": "sold",
+          "is_active_listing": 0,
+          "discounted_price": null,
+          "is_bundle": 0,
+          "is_outlier": 0,
+          "notes": "Seed sold comparable",
+          "last_refreshed_at": null,
+          "refresh_status": "never",
+          "included_in_valuation": 1,
+          "exclusion_reason": null,
+          "created_at": "2026-05-16 15:05:30"
+        },
+        {
+          "evidence_id": "evidence_69767a63-27a7-4621-a8a1-5e681599d67f",
+          "item_id": "item_85160b3d-3263-4095-bb78-b4e90bf47113",
+          "source_type": "url",
+          "source_name": "user_url",
+          "url": "https://example.com/ebay-sold-comp",
+          "url_title": null,
+          "url_platform": "ebay",
+          "screenshot_path": null,
+          "price": 35.0,
+          "currency": "USD",
+          "condition": null,
+          "sale_date": null,
+          "listing_type": "sold",
+          "is_active_listing": 0,
+          "discounted_price": null,
+          "is_bundle": 0,
+          "is_outlier": 0,
+          "notes": "Seed sold comparable",
+          "last_refreshed_at": null,
+          "refresh_status": "never",
+          "included_in_valuation": 1,
+          "exclusion_reason": null,
+          "created_at": "2026-05-16 15:05:30"
+        },
+        {
+          "evidence_id": "evidence_791a9af8-bea6-4fec-955f-ee12b83f39f3",
+          "item_id": "item_85160b3d-3263-4095-bb78-b4e90bf47113",
+          "source_type": "url",
+          "source_name": "user_url",
+          "url": "https://example.com/ebay-sold-comp",
+          "url_title": null,
+          "url_platform": "ebay",
+          "screenshot_path": null,
+          "price": 30.0,
+          "currency": "USD",
+          "condition": null,
+          "sale_date": null,
+          "listing_type": "sold",
+          "is_active_listing": 0,
+          "discounted_price": null,
+          "is_bundle": 0,
+          "is_outlier": 0,
+          "notes": "Seed sold comparable",
+          "last_refreshed_at": null,
+          "refresh_status": "never",
+          "included_in_valuation": 1,
+          "exclusion_reason": null,
+          "created_at": "2026-05-16 15:05:30"
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "warnings": []
+}

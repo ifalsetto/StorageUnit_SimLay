@@ -1,0 +1,4 @@
+storeFile=../release-upload-key.jks
+storePassword=CHANGE_ME
+keyAlias=simlay_upload
+keyPassword=CHANGE_ME

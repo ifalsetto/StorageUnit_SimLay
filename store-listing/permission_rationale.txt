@@ -1,0 +1,1 @@
+StorageUnit SimLay requests camera and photo/video access so users can capture or upload storage-unit images and walkthrough media for inventory processing. The app uses internet access to communicate with the user's configured SimLay backend for item processing, evidence storage, CSV export, and audit export.
