@@ -46,7 +46,7 @@ app.include_router(connectors.router)
 uploads = BASE_DIR / "data" / "uploads"
 exports_dir = BASE_DIR / "data" / "exports"
 uploads.mkdir(parents=True, exist_ok=True)
-exports.mkdir(parents=True, exist_ok=True)
+exports_dir.mkdir(parents=True, exist_ok=True)
 
 app.mount("/uploads", StaticFiles(directory=str(uploads)), name="uploads")
 app.mount("/exports", StaticFiles(directory=str(exports_dir)), name="exports")
