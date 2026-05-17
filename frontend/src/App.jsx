@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { SimLayApi, downloadUrl } from './api';
+import InventoryPanel from "./InventoryPanel";
 import './styles/main.css';
 
 const DEFAULT_ITEM = {
@@ -384,6 +385,8 @@ function App() {
             <li>Confidence required</li><li>Condition is visual-only</li><li>Prices need evidence</li><li>Wix headers strict</li><li>Audit JSON available</li>
           </ul>
         </div>
+
+        <InventoryPanel runId={run?.run_id} />
       </section>}
 
       {activeTab === 'intake' && <section className="pageGrid intakeGrid">

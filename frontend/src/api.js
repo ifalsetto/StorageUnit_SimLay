@@ -24,8 +24,8 @@ export const SimLayApi = {
   getProfile: (name) => api(`/api/profiles/${name}`),
   uploadMedia: async (runId, files) => {
     const form = new FormData();
-    [...files].forEach(f => form.append('files', f));
-    return api(`/api/media/upload/${runId}`, { method: 'POST', body: form });
+    [...files].forEach(f => form.append('file', f));
+    return api(`/api/media/upload-one/${runId}`, { method: 'POST', body: form });
   },
   listMedia: (runId) => api(`/api/media/${runId}`),
   processRun: (runId, provider = 'mock') => api(`/api/process/${runId}?provider=${encodeURIComponent(provider)}`, { method: 'POST' }),
@@ -52,3 +52,47 @@ export const SimLayApi = {
   exportCsv: (runId) => api(`/api/exports/csv/${runId}`, { method: 'POST' }),
   exportAudit: (runId) => api(`/api/exports/audit/${runId}`, { method: 'POST' }),
 };
+
+export async function listItems(runId) {
+  const res = await fetch(`${API_BASE}/api/items/${runId}`);
+  if (!res.ok) {
+    throw new Error(`Failed to load items: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function listMedia(runId) {
+  const res = await fetch(`${API_BASE}/api/media/${runId}`);
+  if (!res.ok) {
+    throw new Error(`Failed to load media: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function uploadOneMedia(runId, file) {
+  const form = new FormData();
+  form.append("file", file);
+
+  const res = await fetch(`${API_BASE}/api/media/upload-one/${runId}`, {
+    method: "POST",
+    body: form,
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Upload failed: ${res.status} ${text}`);
+  }
+
+  return res.json();
+}
+
+export function mediaUrl(filePath) {
+  if (!filePath) return "";
+
+  const cleaned = filePath
+    .replaceAll("\\", "/")
+    .replace(/^data\/uploads\//, "uploads/")
+    .replace(/^backend\/data\/uploads\//, "uploads/");
+
+  return `${API_BASE}/${cleaned}`;
+}
