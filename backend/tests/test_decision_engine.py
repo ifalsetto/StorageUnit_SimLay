@@ -40,7 +40,7 @@ def test_profitable_run_generates_bid_ceiling():
         conn,
         'run_1',
         DecisionInput(
-            current_bid=100,
+            current_bid=40,
             dump_fee_estimate=25,
             fuel_misc_estimate=20,
             minimum_profit_dollars=100,
@@ -62,5 +62,6 @@ def test_unknown_only_run_passes_and_warns():
 
     assert result.verdict == DecisionVerdict.PASS
     assert result.projected_gross_resale == 0
+    assert result.priced_item_count == 0
     assert result.unknown_item_count == 1
     assert result.warning_count >= 1
