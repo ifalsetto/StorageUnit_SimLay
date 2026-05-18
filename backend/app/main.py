@@ -5,7 +5,7 @@ from pathlib import Path
 import os
 
 from app.core.database import init_db
-from app.routers import runs, media, items, evidence, exports, process, profiles, connectors
+from app.routers import runs, media, items, evidence, exports, process, profiles, connectors, decisions
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 
@@ -42,6 +42,7 @@ app.include_router(exports.router)
 app.include_router(process.router)
 app.include_router(profiles.router)
 app.include_router(connectors.router)
+app.include_router(decisions.router)
 
 uploads = BASE_DIR / "data" / "uploads"
 exports_dir = BASE_DIR / "data" / "exports"
