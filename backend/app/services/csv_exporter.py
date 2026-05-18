@@ -5,6 +5,7 @@ from typing import Any
 
 from app.core.database import rows_to_dicts, to_json_text
 from app.core.ids import generate_handle, generate_sku
+from app.models.exports import DEFAULT_WIX_EXPORT_POLICY
 
 
 def _render_template(template: str, item: dict[str, Any], fallback: str) -> str:
@@ -30,6 +31,7 @@ class WixCsvExporter:
         self.exports_dir = exports_dir
         self.exports_dir.mkdir(parents=True, exist_ok=True)
         self.headers = list(self.schema["required_headers"])
+        self.price_policy = DEFAULT_WIX_EXPORT_POLICY
 
     def validate_headers(self, headers: list[str] | None = None) -> None:
         actual = headers or self.headers
@@ -70,8 +72,8 @@ class WixCsvExporter:
                 value = _render_template(mapping.get("template", ""), item, mapping.get("fallback", ""))
             else:
                 value = item.get(source)
-            if header == "Price" and (item.get("valuation_passed_gates") in (0, False) or value is None):
-                value = ""
+            if header == "Price":
+                value = self.price_policy.price_value_or_blank(item, value)
             if value is None:
                 value = ""
             fmt = mapping.get("format")
