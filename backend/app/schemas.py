@@ -1,66 +1,102 @@
-from typing import Optional, Literal
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from __future__ import annotations
 
-Confidence = Literal["Verified", "Inferred", "Unknown"]
-Condition = Literal["New", "Like New", "Used", "Fair", "Parts", "Unknown"]
-ListingType = Literal["sold", "active", "auction_ended"]
+from typing import Optional
 
-class CreateRunRequest(BaseModel):
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.models.enums import Confidence, Condition, EvidenceSourceType, ListingType, TruthSource
+
+
+class ApiSchema(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+        str_strip_whitespace=True,
+        use_enum_values=True,
+        validate_assignment=True,
+    )
+
+
+class CreateRunRequest(ApiSchema):
     profile_name: str = "default"
-    media_type: Literal["photos", "video"] = "photos"
+    media_type: str = Field(default="photos", pattern="^(photos|video)$")
 
-class ItemCreate(BaseModel):
+
+class ItemCreate(ApiSchema):
     run_id: str
     final_name: str = Field(min_length=1)
     raw_name: Optional[str] = None
     brand: Optional[str] = None
     category: Optional[str] = None
     subcategory: Optional[str] = None
-    quantity: int = 1
-    visible_condition: Condition = "Unknown"
+    quantity: int = Field(default=1, ge=1)
+    visible_condition: Condition = Condition.UNKNOWN
     confidence: Confidence
     confidence_reason: Optional[str] = None
-    source: str = "User Visual"
+    source: TruthSource = TruthSource.USER_VISUAL
     notes: Optional[str] = None
     representative_image_id: Optional[str] = None
 
-class ItemUpdate(BaseModel):
+    @field_validator("final_name")
+    @classmethod
+    def final_name_required(cls, value: str) -> str:
+        value = (value or "").strip()
+        if not value:
+            raise ValueError("final_name is required")
+        return value
+
+
+class ItemUpdate(ApiSchema):
     final_name: Optional[str] = None
     brand: Optional[str] = None
     category: Optional[str] = None
     subcategory: Optional[str] = None
-    quantity: Optional[int] = None
+    quantity: Optional[int] = Field(default=None, ge=1)
     visible_condition: Optional[Condition] = None
     confidence: Optional[Confidence] = None
     confidence_reason: Optional[str] = None
+    source: Optional[TruthSource] = None
     notes: Optional[str] = None
 
-class EvidenceCreate(BaseModel):
+    @field_validator("final_name")
+    @classmethod
+    def final_name_not_blank_when_present(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        value = value.strip()
+        if not value:
+            raise ValueError("final_name cannot be blank")
+        return value
+
+
+class EvidenceCreate(ApiSchema):
     item_id: str
-    source_type: Literal["api", "url", "screenshot", "library", "manual_url"] = "url"
+    source_type: EvidenceSourceType = EvidenceSourceType.URL
     source_name: Optional[str] = "user_url"
     url: Optional[str] = None
     url_title: Optional[str] = None
     url_platform: Optional[str] = None
-    price: Optional[float] = None
+    price: Optional[float] = Field(default=None, gt=0)
     currency: str = "USD"
     condition: Optional[str] = None
     sale_date: Optional[str] = None
-    listing_type: ListingType = "sold"
+    listing_type: ListingType = ListingType.SOLD
     is_bundle: bool = False
     notes: Optional[str] = None
 
-    @field_validator("price")
+    @field_validator("currency")
     @classmethod
-    def price_nonnegative(cls, v):
-        if v is not None and v <= 0:
-            raise ValueError("price must be greater than zero when present")
-        return v
+    def normalize_currency(cls, value: str) -> str:
+        value = (value or "USD").strip().upper()
+        if len(value) != 3:
+            raise ValueError("currency must be a 3-letter code")
+        return value
 
-class EvidenceUrlRefreshRequest(BaseModel):
+
+class EvidenceUrlRefreshRequest(ApiSchema):
     evidence_id: str
 
-class ExportResponse(BaseModel):
+
+class ExportResponse(ApiSchema):
     export_id: str
     file_path: str
     row_count: int
