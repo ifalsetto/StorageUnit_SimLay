@@ -32,6 +32,22 @@ def _verdict(current_bid: float, safe_bid: float, max_bid: float, estimated_prof
     return DecisionVerdict.PASS
 
 
+def _valuation_passed(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int):
+        return value == 1
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "passed"}
+    return False
+
+
+def _is_priced_item(item: dict[str, Any]) -> bool:
+    if item.get("confidence") == "Unknown":
+        return False
+    return item.get("value_export") is not None and _valuation_passed(item.get("valuation_passed_gates"))
+
+
 def compute_decision(conn, run_id: str, inputs: DecisionInput | dict[str, Any]) -> DecisionResult:
     if not isinstance(inputs, DecisionInput):
         inputs = DecisionInput(**inputs)
@@ -42,8 +58,8 @@ def compute_decision(conn, run_id: str, inputs: DecisionInput | dict[str, Any]) 
 
     items = rows_to_dicts(conn.execute("SELECT * FROM items WHERE run_id=?", (run_id,)).fetchall())
     total_items = len(items)
-    priced_items = [item for item in items if item.get("value_export") is not None and int(item.get("valuation_passed_gates") or 0) == 1]
     unknown_items = [item for item in items if item.get("confidence") == "Unknown"]
+    priced_items = [item for item in items if _is_priced_item(item)]
     warnings: list[str] = []
     notes: list[str] = []
 
