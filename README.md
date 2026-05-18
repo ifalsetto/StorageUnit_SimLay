@@ -36,6 +36,17 @@ Backend API docs: http://127.0.0.1:8000/docs
 - Price exports only when valuation gates pass.
 - Wix export hard-fails if headers do not match exactly.
 
+## FalseTech runtime guidance
+
+SimLay follows the FalseTech Master Controller runtime boundary:
+
+- Daily work should stay inside active runtime docs, source code, tests, and schemas.
+- Archive-heavy references should not become default app behavior unless explicitly promoted.
+- Similar requests should route to the same subsystem instead of creating duplicate logic.
+- Output should resolve to one clear contract: code patch, repo doc, test, export, report, or decision summary.
+
+See: `docs/FALSETECH_RUNTIME_GUIDANCE.md`
+
 ## Useful commands
 
 ```powershell
@@ -51,3 +62,4 @@ docker compose up --build
 - `DEPLOYMENT_GUIDE.md`
 - `RELEASE_NOTES.md`
 - `docs/PROBLEM_MAP.md`
+- `docs/FALSETECH_RUNTIME_GUIDANCE.md`
