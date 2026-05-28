@@ -29,6 +29,21 @@ export const SimLayApi = {
   },
   listMedia: (runId) => api(`/api/media/${runId}`),
   processRun: (runId, provider = 'mock') => api(`/api/process/${runId}?provider=${encodeURIComponent(provider)}`, { method: 'POST' }),
+  analyzeOcrUpload: async (files, provider = 'mock', options = {}) => {
+    const form = new FormData();
+    [...files].forEach(f => form.append('files', f));
+    if (options.mergeLevel) form.append('merge_level', options.mergeLevel);
+    if (options.returnRawOcr !== undefined) form.append('return_raw_ocr', String(options.returnRawOcr));
+    return api(`/api/ocr/analyze-upload?provider=${encodeURIComponent(provider)}`, { method: 'POST', body: form });
+  },
+  analyzeRunOcr: (runId, provider = 'mock', options = {}) => {
+    const params = new URLSearchParams({ provider });
+    if (options.mergeLevel) params.set('merge_level', options.mergeLevel);
+    if (options.saveItems !== undefined) params.set('save_items', String(options.saveItems));
+    if (options.returnRawOcr !== undefined) params.set('return_raw_ocr', String(options.returnRawOcr));
+    return api(`/api/ocr/run/${runId}?${params.toString()}`, { method: 'POST' });
+  },
+  ocrHealth: (provider = 'mock') => api(`/api/ocr/health?provider=${encodeURIComponent(provider)}`),
   listItems: (runId) => api(`/api/items/${runId}`),
   getItem: (itemId) => api(`/api/items/detail/${itemId}`),
   createItem: (payload) => api('/api/items', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }),
