@@ -5,11 +5,11 @@ from pathlib import Path
 import os
 
 from app.core.database import init_db
-from app.routers import runs, media, items, evidence, exports, process, profiles, connectors, decisions
+from app.routers import runs, media, items, evidence, exports, process, profiles, connectors, decisions, ocr
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 
-app = FastAPI(title="StorageUnit SimLay", version="1.0.0")
+app = FastAPI(title="StorageUnit SimLay", version="1.1.0-ocr-testground")
 
 cors_origins = os.getenv(
     "SIMLAY_CORS_ORIGINS",
@@ -32,7 +32,7 @@ def startup():
 
 @app.get("/")
 def root():
-    return {"app": "StorageUnit SimLay", "status": "ok", "docs": "/docs"}
+    return {"app": "StorageUnit SimLay", "status": "ok", "docs": "/docs", "ocr": "/api/ocr/health"}
 
 app.include_router(runs.router)
 app.include_router(media.router)
@@ -43,6 +43,7 @@ app.include_router(process.router)
 app.include_router(profiles.router)
 app.include_router(connectors.router)
 app.include_router(decisions.router)
+app.include_router(ocr.router)
 
 uploads = BASE_DIR / "data" / "uploads"
 exports_dir = BASE_DIR / "data" / "exports"
