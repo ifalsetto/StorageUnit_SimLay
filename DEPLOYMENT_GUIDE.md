@@ -17,16 +17,16 @@ It converts photos or video keyframes into reviewable inventory records, support
 
 ## Windows local deployment
 
-1. Extract the zip into:
+1. Extract the zip into a generic project directory:
 
 ```powershell
-C:\FalseTech\Projects\StorageUnit_SimLay_Public_Deploy_Release
+C:\Projects\StorageUnit_SimLay_Public_Deploy_Release
 ```
 
 2. Run:
 
 ```powershell
-cd C:\FalseTech\Projects\StorageUnit_SimLay_Public_Deploy_Release
+cd C:\Projects\StorageUnit_SimLay_Public_Deploy_Release
 .\INSTALL_WINDOWS.ps1
 .\START_APP_WINDOWS.ps1
 ```
@@ -115,3 +115,7 @@ backend/config/*.yaml
 backend/config/profiles/default_profile.json
 backend/config/wix_schema.json
 ```
+
+## Public safety note
+
+Do not deploy this repository with real uploaded media, private sales history, real storage-unit locations, secrets, or signing keys committed to source control.
