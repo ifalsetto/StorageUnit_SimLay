@@ -1,11 +1,11 @@
 # StorageUnit SimLay — Public Deploy Release
 
-Accuracy-first storage-unit inventory companion app for FalseTech / SimLay.
+Accuracy-first storage-unit inventory companion app for resale workflows.
 
 ## Fastest Windows install
 
 ```powershell
-cd C:\FalseTech\Projects\StorageUnit_SimLay_Public_Deploy_Release
+cd C:\Projects\StorageUnit_SimLay_Public_Deploy_Release
 .\INSTALL_WINDOWS.ps1
 .\START_APP_WINDOWS.ps1
 ```
@@ -36,16 +36,20 @@ Backend API docs: http://127.0.0.1:8000/docs
 - Price exports only when valuation gates pass.
 - Wix export hard-fails if headers do not match exactly.
 
-## FalseTech runtime guidance
+## Public repository boundary
 
-SimLay follows the FalseTech Master Controller runtime boundary:
+This public repo should contain only app source, public documentation, templates, mock/sample data, and non-secret configuration examples.
 
-- Daily work should stay inside active runtime docs, source code, tests, and schemas.
-- Archive-heavy references should not become default app behavior unless explicitly promoted.
-- Similar requests should route to the same subsystem instead of creating duplicate logic.
-- Output should resolve to one clear contract: code patch, repo doc, test, export, report, or decision summary.
+Do not commit:
 
-See: `docs/FALSETECH_RUNTIME_GUIDANCE.md`
+- Real customer/user media
+- Personal addresses, phone numbers, or emails
+- Real storage-unit locations
+- Private sales history
+- API keys, OAuth secrets, keystores, `.env` files, or signing files
+- Internal planning notes that are not required to build or run the app
+
+See: `docs/PUBLIC_RUNTIME_GUIDANCE.md`
 
 ## Useful commands
 
@@ -62,4 +66,4 @@ docker compose up --build
 - `DEPLOYMENT_GUIDE.md`
 - `RELEASE_NOTES.md`
 - `docs/PROBLEM_MAP.md`
-- `docs/FALSETECH_RUNTIME_GUIDANCE.md`
+- `docs/PUBLIC_RUNTIME_GUIDANCE.md`

@@ -7,7 +7,7 @@
   "overrides": {
     "export": {
       "handle_prefix": "ITEM",
-      "sku_prefix": "FT-GEN"
+      "sku_prefix": "SIM-GEN"
     },
     "taxonomy": {
       "categories": {
@@ -24,7 +24,7 @@
   },
   "metadata": {
     "created_at": "2026-02-03T00:00:00Z",
-    "created_by": "FalseTech",
+    "created_by": "StorageUnit SimLay",
     "wix_site_url": null,
     "notes": "Baseline configuration for new projects"
   }
