@@ -108,6 +108,35 @@ CREATE TABLE IF NOT EXISTS evidence (
     FOREIGN KEY (item_id) REFERENCES items(item_id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS ocr_candidates (
+    candidate_id TEXT PRIMARY KEY,
+    run_id TEXT NOT NULL,
+    media_id TEXT,
+    source_image TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    candidate_hash TEXT NOT NULL,
+    candidate_name TEXT NOT NULL,
+    brand_guess TEXT,
+    model_guess TEXT,
+    serial_guess TEXT,
+    barcode_guess TEXT,
+    price_guess TEXT,
+    evidence_text TEXT CHECK(evidence_text IS NULL OR json_valid(evidence_text)),
+    raw_ocr TEXT CHECK(raw_ocr IS NULL OR json_valid(raw_ocr)),
+    avg_confidence REAL DEFAULT 0,
+    simlay_usefulness_score INTEGER DEFAULT 0,
+    ocr_status TEXT NOT NULL DEFAULT 'needs_review',
+    review_status TEXT NOT NULL DEFAULT 'pending_review',
+    notes TEXT,
+    promoted_item_id TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(run_id, candidate_hash),
+    FOREIGN KEY (run_id) REFERENCES runs(run_id) ON DELETE CASCADE,
+    FOREIGN KEY (media_id) REFERENCES media_inputs(media_id),
+    FOREIGN KEY (promoted_item_id) REFERENCES items(item_id)
+);
+
 CREATE TABLE IF NOT EXISTS exports (
     export_id TEXT PRIMARY KEY,
     run_id TEXT NOT NULL,
@@ -134,6 +163,9 @@ CREATE TABLE IF NOT EXISTS audit_events (
 CREATE INDEX IF NOT EXISTS idx_items_run_id ON items(run_id);
 CREATE INDEX IF NOT EXISTS idx_media_run_id ON media_inputs(run_id);
 CREATE INDEX IF NOT EXISTS idx_evidence_item_id ON evidence(item_id);
+CREATE INDEX IF NOT EXISTS idx_ocr_candidates_run_id ON ocr_candidates(run_id);
+CREATE INDEX IF NOT EXISTS idx_ocr_candidates_media_id ON ocr_candidates(media_id);
+CREATE INDEX IF NOT EXISTS idx_ocr_candidates_review_status ON ocr_candidates(review_status);
 CREATE INDEX IF NOT EXISTS idx_exports_run_id ON exports(run_id);
 CREATE INDEX IF NOT EXISTS idx_runs_history_list ON runs(
     created_at DESC,
