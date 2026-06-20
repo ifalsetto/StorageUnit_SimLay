@@ -135,6 +135,15 @@ CREATE INDEX IF NOT EXISTS idx_items_run_id ON items(run_id);
 CREATE INDEX IF NOT EXISTS idx_media_run_id ON media_inputs(run_id);
 CREATE INDEX IF NOT EXISTS idx_evidence_item_id ON evidence(item_id);
 CREATE INDEX IF NOT EXISTS idx_exports_run_id ON exports(run_id);
+CREATE INDEX IF NOT EXISTS idx_runs_history_list ON runs(
+    created_at DESC,
+    run_id,
+    run_short,
+    profile_name,
+    media_type,
+    status,
+    total_items
+);
 """
 
 def connect(db_path: str | Path = DEFAULT_DB_PATH) -> sqlite3.Connection:
