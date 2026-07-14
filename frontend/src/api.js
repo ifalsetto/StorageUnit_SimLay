@@ -24,8 +24,15 @@ export const SimLayApi = {
   getProfile: (name) => api(`/api/profiles/${name}`),
   uploadMedia: async (runId, files) => {
     const form = new FormData();
-    [...files].forEach(f => form.append('file', f));
-    return api(`/api/media/upload-one/${runId}`, { method: 'POST', body: form });
+
+    [...files].forEach((file) => {
+      form.append('files', file);
+    });
+
+    return api(`/api/media/upload/${runId}`, {
+      method: 'POST',
+      body: form,
+    });
   },
   listMedia: (runId) => api(`/api/media/${runId}`),
   processRun: (runId, provider = 'mock') => api(`/api/process/${runId}?provider=${encodeURIComponent(provider)}`, { method: 'POST' }),
