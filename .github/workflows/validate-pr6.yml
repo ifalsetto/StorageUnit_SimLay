@@ -1,9 +1,9 @@
 name: Validate PR 6 frontend build
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/fix-multi-file-upload
+      - main
 
 jobs:
   frontend-build:
