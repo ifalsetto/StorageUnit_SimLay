@@ -19,6 +19,7 @@ def configure_temp_db(monkeypatch, tmp_path):
         "db_session",
         lambda: db_session(db_path),
     )
+    monkeypatch.setattr(process_run_tool_module, "load_all_config", lambda: {"test": True})
     return db_path
 
 
@@ -93,11 +94,19 @@ def test_successful_processing_with_mock_provider(monkeypatch, tmp_path):
             (
                 "media_tool_test",
                 "run_tool_test",
-                str(tmp_path / "mock_tool_chest.jpg"),
+                "data/mock_tool_chest.jpg",
                 "image/jpeg",
                 1,
             ),
         )
+
+    async def fake_process_run(conn, run_id, config, provider_name=None):
+        assert run_id == "run_tool_test"
+        assert config == {"test": True}
+        assert provider_name == "mock"
+        return {"status": "processed", "items_created": 1, "warnings": []}
+
+    monkeypatch.setattr(process_run_tool_module, "process_run", fake_process_run)
 
     result = run_tool("run_tool_test", provider="mock")
 
