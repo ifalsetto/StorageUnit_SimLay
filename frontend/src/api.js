@@ -15,6 +15,14 @@ export async function api(path, options = {}) {
   return res.json();
 }
 
+function itemListPath(runId, options = {}) {
+  const params = new URLSearchParams();
+  if (options.owner && options.owner !== 'All') params.set('owner', options.owner);
+  if (options.includeDeleted) params.set('include_deleted', 'true');
+  const query = params.toString();
+  return `/api/items/${runId}${query ? `?${query}` : ''}`;
+}
+
 export const SimLayApi = {
   health: () => api('/'),
   createRun: (payload) => api('/api/runs', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }),
@@ -24,15 +32,8 @@ export const SimLayApi = {
   getProfile: (name) => api(`/api/profiles/${name}`),
   uploadMedia: async (runId, files) => {
     const form = new FormData();
-
-    [...files].forEach((file) => {
-      form.append('files', file);
-    });
-
-    return api(`/api/media/upload/${runId}`, {
-      method: 'POST',
-      body: form,
-    });
+    [...files].forEach((file) => form.append('files', file));
+    return api(`/api/media/upload/${runId}`, { method: 'POST', body: form });
   },
   listMedia: (runId) => api(`/api/media/${runId}`),
   processRun: (runId, provider = 'mock') => api(`/api/process/${runId}?provider=${encodeURIComponent(provider)}`, { method: 'POST' }),
@@ -51,10 +52,20 @@ export const SimLayApi = {
     return api(`/api/ocr/run/${runId}?${params.toString()}`, { method: 'POST' });
   },
   ocrHealth: (provider = 'mock') => api(`/api/ocr/health?provider=${encodeURIComponent(provider)}`),
-  listItems: (runId) => api(`/api/items/${runId}`),
+  listItems: (runId, options = {}) => api(itemListPath(runId, options)),
   getItem: (itemId) => api(`/api/items/detail/${itemId}`),
+  inventorySummary: (runId) => api(`/api/items/run/${runId}/summary`),
   createItem: (payload) => api('/api/items', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }),
   updateItem: (itemId, payload) => api(`/api/items/${itemId}`, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }),
+  deleteItem: (itemId, reason = '') => {
+    const params = new URLSearchParams({ confirm: 'true' });
+    if (reason) params.set('reason', reason);
+    return api(`/api/items/${itemId}?${params.toString()}`, { method: 'DELETE' });
+  },
+  restoreItem: (itemId) => api(`/api/items/${itemId}/restore`, { method: 'POST' }),
+  duplicateItem: (itemId, payload = {}) => api(`/api/items/${itemId}/duplicate`, {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload),
+  }),
   valueItem: (itemId) => api(`/api/items/${itemId}/value`, { method: 'POST' }),
   addEvidence: (payload) => api('/api/evidence', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }),
   listEvidence: (itemId) => api(`/api/evidence/item/${itemId}`),
@@ -75,46 +86,32 @@ export const SimLayApi = {
   exportAudit: (runId) => api(`/api/exports/audit/${runId}`, { method: 'POST' }),
 };
 
-export async function listItems(runId) {
-  const res = await fetch(`${API_BASE}/api/items/${runId}`);
-  if (!res.ok) {
-    throw new Error(`Failed to load items: ${res.status}`);
-  }
-  return res.json();
+export async function listItems(runId, options = {}) {
+  return api(itemListPath(runId, options));
 }
 
 export async function listMedia(runId) {
   const res = await fetch(`${API_BASE}/api/media/${runId}`);
-  if (!res.ok) {
-    throw new Error(`Failed to load media: ${res.status}`);
-  }
+  if (!res.ok) throw new Error(`Failed to load media: ${res.status}`);
   return res.json();
 }
 
 export async function uploadOneMedia(runId, file) {
   const form = new FormData();
   form.append("file", file);
-
-  const res = await fetch(`${API_BASE}/api/media/upload-one/${runId}`, {
-    method: "POST",
-    body: form,
-  });
-
+  const res = await fetch(`${API_BASE}/api/media/upload-one/${runId}`, { method: "POST", body: form });
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`Upload failed: ${res.status} ${text}`);
   }
-
   return res.json();
 }
 
 export function mediaUrl(filePath) {
   if (!filePath) return "";
-
   const cleaned = filePath
     .replaceAll("\\", "/")
     .replace(/^data\/uploads\//, "uploads/")
     .replace(/^backend\/data\/uploads\//, "uploads/");
-
   return `${API_BASE}/${cleaned}`;
 }
