@@ -48,7 +48,7 @@ def build_simlay_practice_flow(
         SELECT COUNT(*)
         FROM evidence e
         JOIN items i ON i.item_id = e.item_id
-        WHERE i.run_id=?
+        WHERE i.run_id=? AND i.deleted_at IS NULL
         """,
         (run_id,),
     ).fetchone()[0]
@@ -62,6 +62,7 @@ def build_simlay_practice_flow(
             "profile_name": run.get("profile_name"),
             "run_status": run.get("status"),
             "media_type": run.get("media_type"),
+            "owner": run.get("owner") or "Unassigned",
             "current_bid": inputs.current_bid,
             "buyer_premium_pct": inputs.buyer_premium_pct,
             "tax_rate_pct": inputs.tax_rate_pct,
@@ -71,8 +72,9 @@ def build_simlay_practice_flow(
             "target_roi_pct": inputs.target_roi_pct,
         },
         process=[
-            "Reuse the existing SimLay run and normalized inventory records.",
+            "Reuse the existing SimLay run and normalized active inventory records.",
             "Apply existing valuation gates; Unknown-confidence items do not count as reliable upside.",
+            "Exclude recoverably deleted inventory from evidence and acquisition-decision totals.",
             "Reuse the existing conservative SimLay decision engine to calculate safe bid, maximum bid, profit, and ROI.",
             "Translate the verdict into a human-authorized next action without auto-executing a purchase.",
         ],
@@ -114,7 +116,7 @@ def build_simlay_practice_flow(
         },
         provenance={
             "observed": [
-                "Run metadata, inventory counts, and evidence-record count come from the SimLay SQLite data model.",
+                "Run metadata, active inventory counts, and active-item evidence count come from the SimLay SQLite data model.",
             ],
             "derived": [
                 "Safe bid, maximum bid, projected cash, cost, profit, and ROI come from the existing SimLay decision engine.",
@@ -123,6 +125,6 @@ def build_simlay_practice_flow(
                 "The recommended next action is a presentation-layer interpretation of the existing decision verdict.",
             ],
             "decision_engine": "app.services.decision_engine.compute_decision",
-            "contract_version": "1.0",
+            "contract_version": "1.1",
         },
     )

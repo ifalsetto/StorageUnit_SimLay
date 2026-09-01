@@ -1,0 +1,14 @@
+{
+  "project": "StorageUnit SimLay",
+  "canonical_repository": "ifalsetto/StorageUnit_SimLay",
+  "version": "2.0.0-continuity-master",
+  "runtime": {
+    "backend": "FastAPI + SQLite",
+    "frontend": "React + Vite",
+    "storage": "local-first SQLite + local filesystem media/exports"
+  },
+  "owners": ["Thomas", "Mine", "Unassigned"],
+  "continuity_policy": "merge-forward-only",
+  "private_data_policy": "Never commit local inventory database, uploads, or exports to the public repository.",
+  "status": "publication_branch"
+}

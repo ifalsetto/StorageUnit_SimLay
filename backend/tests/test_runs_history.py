@@ -14,9 +14,9 @@ def seed_large_run_history(db_path: Path, count: int = 500) -> None:
                 """
                 INSERT INTO runs(
                     run_id, run_short, created_at, profile_name, profile_snapshot,
-                    media_type, status, total_items, errors, warnings
+                    media_type, status, owner, total_items, errors, warnings
                 )
-                VALUES(?, ?, ?, 'default', ?, 'photos', 'created', ?, '[]', '[]')
+                VALUES(?, ?, ?, 'default', ?, 'photos', 'created', 'Unassigned', ?, '[]', '[]')
                 """,
                 (run_id, f"R{idx:04d}", created_at, to_json_text({"profile": "default"}), idx),
             )
@@ -70,6 +70,7 @@ def test_list_runs_returns_ordered_metadata_without_detail_loads(tmp_path, monke
         "profile_name",
         "media_type",
         "status",
+        "owner",
         "total_items",
     }
     assert "items" not in payload["runs"][0]
@@ -77,7 +78,7 @@ def test_list_runs_returns_ordered_metadata_without_detail_loads(tmp_path, monke
     assert "evidence" not in payload["runs"][0]
 
 
-def test_runs_history_query_has_covering_index(tmp_path):
+def test_runs_history_query_uses_history_index(tmp_path):
     db_path = tmp_path / "simlay.db"
     init_db(db_path)
 
@@ -92,7 +93,7 @@ def test_runs_history_query_has_covering_index(tmp_path):
         plan_rows = conn.execute(
             """
             EXPLAIN QUERY PLAN
-            SELECT run_id, run_short, created_at, profile_name, media_type, status, total_items
+            SELECT run_id, run_short, created_at, profile_name, media_type, status, owner, total_items
             FROM runs
             ORDER BY created_at DESC
             """

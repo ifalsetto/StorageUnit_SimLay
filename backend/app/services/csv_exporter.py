@@ -16,7 +16,6 @@ def _render_template(template: str, item: dict[str, Any], fallback: str) -> str:
 
 
 def _condition_ok(condition: str | None, item: dict[str, Any]) -> bool:
-    # Supported simple expression: confidence == 'Verified'
     if not condition:
         return True
     if "confidence" in condition and "Verified" in condition:
@@ -89,9 +88,12 @@ class WixCsvExporter:
         run = dict(conn.execute("SELECT * FROM runs WHERE run_id=?", (run_id,)).fetchone() or {})
         if not run:
             raise ValueError(f"Run not found: {run_id}")
-        items = rows_to_dicts(conn.execute("SELECT * FROM items WHERE run_id=? ORDER BY sort_tier ASC, sort_order ASC, final_name ASC", (run_id,)).fetchall())
+        items = rows_to_dicts(conn.execute(
+            "SELECT * FROM items WHERE run_id=? AND deleted_at IS NULL ORDER BY sort_tier ASC, sort_order ASC, final_name ASC",
+            (run_id,),
+        ).fetchall())
         if not items:
-            raise ValueError("No items to export")
+            raise ValueError("No active items to export")
         self.validate_headers()
         items = self.ensure_ids(conn, run, items)
         rows = [self.item_to_row(item) for item in items]
@@ -110,6 +112,6 @@ class WixCsvExporter:
             INSERT OR REPLACE INTO exports(export_id, run_id, export_type, file_path, row_count, validation_passed, validation_errors)
             VALUES(?, ?, 'wix_csv', ?, ?, 1, ?)
         """, (export_id, run_id, str(path.relative_to(path.parents[1])), len(rows), to_json_text([])))
-        conn.execute("UPDATE items SET wix_exported=1 WHERE run_id=?", (run_id,))
+        conn.execute("UPDATE items SET wix_exported=1 WHERE run_id=? AND deleted_at IS NULL", (run_id,))
         conn.execute("UPDATE runs SET csv_exported_at=CURRENT_TIMESTAMP, status='completed' WHERE run_id=?", (run_id,))
         return {"export_id": export_id, "file_path": str(path), "row_count": len(rows), "validation_passed": True}

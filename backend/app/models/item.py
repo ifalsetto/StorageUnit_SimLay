@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
 from .base import SimLayModel
-from .enums import Confidence, Condition, TruthSource
+from .enums import Confidence, Condition, InventoryOwner, ItemAction, TruthSource
 
 
 class ItemModel(SimLayModel):
@@ -23,6 +23,12 @@ class ItemModel(SimLayModel):
     confidence_reason: Optional[str] = None
     source: TruthSource = TruthSource.USER_VISUAL
     notes: Optional[str] = None
+    owner: InventoryOwner = InventoryOwner.UNASSIGNED
+    item_action: ItemAction = ItemAction.UNASSIGNED
+    manual_value_low: Optional[float] = None
+    manual_value_expected: Optional[float] = None
+    manual_value_high: Optional[float] = None
+    asking_price: Optional[float] = None
     representative_image_id: Optional[str] = None
     flag_unknown: bool = False
     flag_duplicate_suspect: bool = False
@@ -40,6 +46,8 @@ class ItemModel(SimLayModel):
     wix_handle: Optional[str] = None
     wix_sku: Optional[str] = None
     wix_exported: bool = False
+    deleted_at: Optional[str] = None
+    deleted_reason: Optional[str] = None
 
     @field_validator("final_name")
     @classmethod
@@ -49,12 +57,34 @@ class ItemModel(SimLayModel):
             raise ValueError("final_name is required")
         return value
 
-    @field_validator("value_p25", "value_p50", "value_p75", "value_export")
+    @field_validator(
+        "manual_value_low",
+        "manual_value_expected",
+        "manual_value_high",
+        "asking_price",
+        "value_p25",
+        "value_p50",
+        "value_p75",
+        "value_export",
+    )
     @classmethod
     def valuation_values_nonnegative(cls, value: Optional[float]) -> Optional[float]:
         if value is not None and value < 0:
             raise ValueError("valuation values cannot be negative")
         return value
+
+    @model_validator(mode="after")
+    def manual_value_band_is_ordered(self):
+        low = self.manual_value_low
+        expected = self.manual_value_expected
+        high = self.manual_value_high
+        if low is not None and high is not None and high < low:
+            raise ValueError("manual_value_high must be greater than or equal to manual_value_low")
+        if expected is not None and low is not None and expected < low:
+            raise ValueError("manual_value_expected cannot be below manual_value_low")
+        if expected is not None and high is not None and expected > high:
+            raise ValueError("manual_value_expected cannot be above manual_value_high")
+        return self
 
     @property
     def is_unknown(self) -> bool:

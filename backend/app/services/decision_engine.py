@@ -56,7 +56,8 @@ def compute_decision(conn, run_id: str, inputs: DecisionInput | dict[str, Any]) 
     if not run:
         raise ValueError(f"Run not found: {run_id}")
 
-    items = rows_to_dicts(conn.execute("SELECT * FROM items WHERE run_id=?", (run_id,)).fetchall())
+    # Recoverably deleted inventory must never influence acquisition decisions.
+    items = rows_to_dicts(conn.execute("SELECT * FROM items WHERE run_id=? AND deleted_at IS NULL", (run_id,)).fetchall())
     total_items = len(items)
     unknown_items = [item for item in items if item.get("confidence") == "Unknown"]
     priced_items = [item for item in items if _is_priced_item(item)]

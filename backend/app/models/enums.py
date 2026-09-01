@@ -20,11 +20,19 @@ class Condition(str, Enum):
 
 class TruthSource(str, Enum):
     USER_VISUAL = "User Visual"
+    PHOTO = "Photo"
+    USER_CONFIRMED = "User Confirmed"
     DEFAULT_LIBRARY = "Default Library"
     TONY_HISTORY = "Tony History"
     APPROVED_COMP = "Approved Comp"
     WEB_CITED = "Web (Cited)"
     MANUAL = "Manual"
+
+
+class InventoryOwner(str, Enum):
+    THOMAS = "Thomas"
+    MINE = "Mine"
+    UNASSIGNED = "Unassigned"
 
 
 class ItemAction(str, Enum):
@@ -61,6 +69,8 @@ class AuditAction(str, Enum):
     CREATE = "create"
     UPDATE = "update"
     REMOVE = "remove"
+    RESTORE = "restore"
+    DUPLICATE = "duplicate"
     VALUE = "value"
     EXPORT = "export"
     WARN = "warn"
