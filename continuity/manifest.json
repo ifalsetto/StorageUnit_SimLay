@@ -10,5 +10,11 @@
   "owners": ["Thomas", "Mine", "Unassigned"],
   "continuity_policy": "merge-forward-only",
   "private_data_policy": "Never commit local inventory database, uploads, or exports to the public repository.",
-  "status": "publication_branch"
+  "status": "canonical_main",
+  "canonical_main_commit": "7e89f8a87b4ebe77ee2be09d7e771e04468d651e",
+  "canonical_pr": 10,
+  "validation": {
+    "pull_request_ci": "passed",
+    "main_ci": "passed"
+  }
 }
