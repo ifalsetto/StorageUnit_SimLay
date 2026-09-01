@@ -1,13 +1,14 @@
-import json
 import uuid
+
 from fastapi import APIRouter, HTTPException
 
 from app.core.config import load_all_config
-from app.core.database import db_session, row_to_dict, rows_to_dicts, to_json_text, from_json_text
-from app.core.ids import make_run_short
+from app.core.database import db_session, from_json_text, row_to_dict, rows_to_dicts, to_json_text
+from app.core.ids import make_run_short, new_uuid
 from app.schemas import CreateRunRequest
 
 router = APIRouter(prefix="/api/runs", tags=["runs"])
+
 
 @router.post("")
 def create_run(payload: CreateRunRequest):
@@ -15,17 +16,52 @@ def create_run(payload: CreateRunRequest):
     run_id = str(uuid.uuid4())
     run_short = make_run_short(f"{payload.profile_name}:{run_id}")
     with db_session() as conn:
-        conn.execute("""
-            INSERT INTO runs(run_id, run_short, profile_name, profile_snapshot, media_type, status, errors, warnings)
-            VALUES(?, ?, ?, ?, ?, 'created', ?, ?)
-        """, (run_id, run_short, payload.profile_name, to_json_text(config), payload.media_type, to_json_text([]), to_json_text([])))
-    return {"run_id": run_id, "run_short": run_short, "profile_name": payload.profile_name, "status": "created"}
+        conn.execute(
+            """
+            INSERT INTO runs(run_id, run_short, profile_name, profile_snapshot, media_type, owner, status, errors, warnings)
+            VALUES(?, ?, ?, ?, ?, ?, 'created', ?, ?)
+            """,
+            (
+                run_id,
+                run_short,
+                payload.profile_name,
+                to_json_text(config),
+                payload.media_type,
+                payload.owner,
+                to_json_text([]),
+                to_json_text([]),
+            ),
+        )
+        conn.execute(
+            """
+            INSERT INTO audit_events(audit_id, run_id, entity_type, entity_id, action, payload)
+            VALUES(?, ?, 'run', ?, 'create', ?)
+            """,
+            (new_uuid("audit"), run_id, run_id, to_json_text({"owner": payload.owner, "profile_name": payload.profile_name})),
+        )
+    return {
+        "run_id": run_id,
+        "run_short": run_short,
+        "profile_name": payload.profile_name,
+        "owner": payload.owner,
+        "status": "created",
+    }
+
 
 @router.get("")
 def list_runs():
     with db_session() as conn:
-        rows = rows_to_dicts(conn.execute("SELECT run_id, run_short, created_at, profile_name, media_type, status, total_items FROM runs ORDER BY created_at DESC").fetchall())
+        rows = rows_to_dicts(
+            conn.execute(
+                """
+                SELECT run_id, run_short, created_at, profile_name, media_type, status, owner, total_items
+                FROM runs
+                ORDER BY created_at DESC
+                """
+            ).fetchall()
+        )
     return {"runs": rows}
+
 
 @router.get("/{run_id}")
 def get_run(run_id: str):
