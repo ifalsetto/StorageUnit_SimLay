@@ -92,6 +92,8 @@ def compute_item_valuation(conn, item_id: str, config: dict[str, Any]) -> dict[s
     if not item:
         raise ValueError(f"Item not found: {item_id}")
     item = dict(item)
+    if item.get("deleted_at"):
+        return {"passed": False, "reason": "item_deleted", "warnings": ["Deleted items are excluded from valuation runs."]}
     warnings: list[str] = []
     sold, active, ev_warnings = gather_valid_evidence(conn, item_id, config)
     warnings.extend(ev_warnings)
@@ -158,5 +160,5 @@ def compute_item_valuation(conn, item_id: str, config: dict[str, Any]) -> dict[s
 
 
 def compute_run_valuations(conn, run_id: str, config: dict[str, Any]) -> list[dict[str, Any]]:
-    items = rows_to_dicts(conn.execute("SELECT item_id FROM items WHERE run_id=?", (run_id,)).fetchall())
+    items = rows_to_dicts(conn.execute("SELECT item_id FROM items WHERE run_id=? AND deleted_at IS NULL", (run_id,)).fetchall())
     return [compute_item_valuation(conn, item["item_id"], config) for item in items]
