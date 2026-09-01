@@ -1,18 +1,27 @@
 {
   "project": "StorageUnit SimLay",
   "canonical_repository": "ifalsetto/StorageUnit_SimLay",
-  "version": "2.0.0-continuity-master",
+  "version": "2.0.1-continuity-master",
   "runtime": {
     "backend": "FastAPI + SQLite",
     "frontend": "React + Vite",
     "storage": "local-first SQLite + local filesystem media/exports"
   },
   "owners": ["Thomas", "Mine", "Unassigned"],
+  "capabilities": [
+    "owner-isolated inventory CRUD",
+    "recoverable soft delete and audit logging",
+    "item-linked photo safety",
+    "evidence-gated valuation and acquisition decisions",
+    "private photo-inventory JSON import",
+    "idempotent source-item import tracking",
+    "exact unique-basename media relinking"
+  ],
   "continuity_policy": "merge-forward-only",
-  "private_data_policy": "Never commit local inventory database, uploads, or exports to the public repository.",
+  "private_data_policy": "Never commit local inventory database, uploads, private inventory JSON, or exports to the public repository.",
   "status": "canonical_main",
-  "canonical_main_commit": "7e89f8a87b4ebe77ee2be09d7e771e04468d651e",
-  "canonical_pr": 10,
+  "canonical_main_commit": "c4f0aedbae8888413306990616c3a9b76c96f660",
+  "canonical_pr": 12,
   "validation": {
     "pull_request_ci": "passed",
     "main_ci": "passed"
