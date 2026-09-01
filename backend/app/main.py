@@ -1,19 +1,20 @@
+import os
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from pathlib import Path
-import os
 
 from app.core.database import init_db
-from app.routers import runs, media, items, evidence, exports, process, profiles, connectors, decisions, ocr, practice
+from app.routers import connectors, decisions, evidence, exports, items, media, ocr, practice, process, profiles, runs
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 
-app = FastAPI(title="StorageUnit SimLay", version="1.2.0-falsetech-practice")
+app = FastAPI(title="StorageUnit SimLay", version="2.0.0-continuity-master")
 
 cors_origins = os.getenv(
     "SIMLAY_CORS_ORIGINS",
-    "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000"
+    "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000",
 ).split(",")
 
 app.add_middleware(
@@ -24,21 +25,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.on_event("startup")
 def startup():
     init_db()
     (BASE_DIR / "data" / "uploads").mkdir(parents=True, exist_ok=True)
     (BASE_DIR / "data" / "exports").mkdir(parents=True, exist_ok=True)
 
+
 @app.get("/")
 def root():
     return {
         "app": "StorageUnit SimLay",
+        "version": "2.0.0-continuity-master",
         "status": "ok",
+        "canonical_repository": "ifalsetto/StorageUnit_SimLay",
+        "inventory_owners": ["Thomas", "Mine", "Unassigned"],
         "docs": "/docs",
         "ocr": "/api/ocr/health",
         "falsetech_practice": "/api/practice/simlay/{run_id}",
     }
+
 
 app.include_router(runs.router)
 app.include_router(media.router)
