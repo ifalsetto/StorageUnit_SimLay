@@ -1,6 +1,8 @@
 import json
+import shutil
 import sqlite3
 from contextlib import contextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -193,7 +195,6 @@ def _column_names(conn: sqlite3.Connection, table: str) -> set[str]:
 
 
 def _ensure_column(conn: sqlite3.Connection, table: str, name: str, definition: str) -> None:
-    """Add a backwards-compatible column when opening an older SimLay database."""
     if name not in _column_names(conn, table):
         conn.execute(f"ALTER TABLE {table} ADD COLUMN {name} {definition}")
 
@@ -201,7 +202,6 @@ def _ensure_column(conn: sqlite3.Connection, table: str, name: str, definition: 
 def migrate_schema(conn: sqlite3.Connection) -> None:
     """Idempotent continuity migration for databases created by older SimLay releases."""
     _ensure_column(conn, "runs", "owner", "TEXT NOT NULL DEFAULT 'Unassigned'")
-
     _ensure_column(conn, "items", "owner", "TEXT NOT NULL DEFAULT 'Unassigned'")
     _ensure_column(conn, "items", "item_action", "TEXT NOT NULL DEFAULT 'Unassigned'")
     _ensure_column(conn, "items", "manual_value_low", "REAL")
@@ -213,6 +213,12 @@ def migrate_schema(conn: sqlite3.Connection) -> None:
 
     conn.execute("CREATE INDEX IF NOT EXISTS idx_items_owner_active ON items(run_id, owner, deleted_at)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_runs_owner_created ON runs(owner, created_at DESC)")
+    conn.execute("DROP INDEX IF EXISTS idx_runs_history_list")
+    conn.execute("""
+        CREATE INDEX idx_runs_history_list ON runs(
+            created_at DESC, run_id, run_short, profile_name, media_type, status, owner, total_items
+        )
+    """)
 
 
 def connect(db_path: str | Path = DEFAULT_DB_PATH) -> sqlite3.Connection:
@@ -222,6 +228,36 @@ def connect(db_path: str | Path = DEFAULT_DB_PATH) -> sqlite3.Connection:
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
+
+
+def _needs_continuity_migration(db_path: str | Path) -> bool:
+    path = Path(db_path)
+    if not path.exists() or path.stat().st_size == 0:
+        return False
+    try:
+        with connect(path) as conn:
+            tables = {row["name"] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+            if "runs" not in tables or "items" not in tables:
+                return False
+            return "owner" not in _column_names(conn, "runs") or "owner" not in _column_names(conn, "items")
+    except sqlite3.DatabaseError:
+        return False
+
+
+def backup_database(db_path: str | Path) -> Path | None:
+    path = Path(db_path)
+    if not path.exists() or path.stat().st_size == 0:
+        return None
+    backup_dir = path.parent / "backups"
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    backup_path = backup_dir / f"{path.stem}_pre_continuity_{stamp}{path.suffix}"
+    counter = 1
+    while backup_path.exists():
+        backup_path = backup_dir / f"{path.stem}_pre_continuity_{stamp}_{counter}{path.suffix}"
+        counter += 1
+    shutil.copy2(path, backup_path)
+    return backup_path
 
 
 @contextmanager
@@ -238,7 +274,10 @@ def db_session(db_path: str | Path = DEFAULT_DB_PATH):
 
 
 def init_db(db_path: str | Path = DEFAULT_DB_PATH) -> None:
-    with connect(db_path) as conn:
+    path = Path(db_path)
+    if _needs_continuity_migration(path):
+        backup_database(path)
+    with connect(path) as conn:
         conn.executescript(SCHEMA)
         migrate_schema(conn)
         conn.commit()
