@@ -67,6 +67,28 @@ export const SimLayApi = {
     method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload),
   }),
   valueItem: (itemId) => api(`/api/items/${itemId}/value`, { method: 'POST' }),
+  importPhotoInventory: async (runId, file, options = {}) => {
+    const params = new URLSearchParams({
+      owner: options.owner || 'Unassigned',
+      dry_run: String(options.dryRun !== false),
+    });
+    if (options.sourceName) params.set('source_name', options.sourceName);
+    const form = new FormData();
+    form.append('file', file);
+    return api(`/api/imports/photo-inventory/${runId}?${params.toString()}`, { method: 'POST', body: form });
+  },
+  relinkImportedMedia: (runId, sourceName = '') => {
+    const params = new URLSearchParams();
+    if (sourceName) params.set('source_name', sourceName);
+    const query = params.toString();
+    return api(`/api/imports/photo-inventory/${runId}/relink-media${query ? `?${query}` : ''}`, { method: 'POST' });
+  },
+  importedInventoryStatus: (runId, sourceName = '') => {
+    const params = new URLSearchParams();
+    if (sourceName) params.set('source_name', sourceName);
+    const query = params.toString();
+    return api(`/api/imports/photo-inventory/${runId}/status${query ? `?${query}` : ''}`);
+  },
   addEvidence: (payload) => api('/api/evidence', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }),
   listEvidence: (itemId) => api(`/api/evidence/item/${itemId}`),
   addScreenshotEvidence: async ({ item_id, file, listing_type, platform, notes, ocr_text }) => {

@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.core.database import init_db
-from app.routers import connectors, decisions, evidence, exports, items, media, ocr, practice, process, profiles, runs
+from app.routers import connectors, decisions, evidence, exports, imports, items, media, ocr, practice, process, profiles, runs
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 
@@ -44,12 +44,14 @@ def root():
         "docs": "/docs",
         "ocr": "/api/ocr/health",
         "falsetech_practice": "/api/practice/simlay/{run_id}",
+        "private_inventory_import": "/api/imports/photo-inventory/{run_id}",
     }
 
 
 app.include_router(runs.router)
 app.include_router(media.router)
 app.include_router(items.router)
+app.include_router(imports.router)
 app.include_router(evidence.router)
 app.include_router(exports.router)
 app.include_router(process.router)
