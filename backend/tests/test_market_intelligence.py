@@ -41,16 +41,40 @@ def test_exact_sold_comp_has_more_authority_than_active_listing():
     assert active_meta["source_key"] == "active_listing"
 
 
+def test_ebay_product_research_screenshot_gets_top_authority():
+    weight, meta = evidence_weight(
+        {
+            "listing_type": "sold",
+            "source_name": "user_screenshot",
+            "url_platform": "ebay",
+            "notes": "eBay Product Research sold results screenshot",
+        },
+        config(),
+    )
+    assert weight == 1.0
+    assert meta["source_key"] == "ebay_product_research"
+
+
 def test_ebay_default_fee_estimate():
     result = estimate_marketplace_fee("ebay", 100, config())
     assert result["estimated_fee"] == 14.00
     assert result["fee_rule"].startswith("13.60_percent")
 
 
+def test_ebay_does_not_assume_paid_store_electronics_rate():
+    result = estimate_marketplace_fee("ebay", 100, config(), category_text="consumer electronics")
+    assert result["estimated_fee"] == 14.00
+
+
 def test_poshmark_threshold_fee_estimate():
     cfg = config()
     assert estimate_marketplace_fee("poshmark", 10, cfg)["estimated_fee"] == 2.95
     assert estimate_marketplace_fee("poshmark", 20, cfg)["estimated_fee"] == 4.00
+
+
+def test_reverb_tax_only_affects_processing_component():
+    result = estimate_marketplace_fee("reverb", 100, config(), estimated_tax=10)
+    assert result["estimated_fee"] == 9.00
 
 
 def test_tcgplayer_marketplace_standard_fee_estimate():
