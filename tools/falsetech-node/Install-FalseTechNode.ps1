@@ -20,7 +20,7 @@ $FetchScript = Join-Path $NodeDir 'falsetech_storage_fetch.py'
 $Requirements = Join-Path $NodeDir 'requirements.txt'
 $SupabaseUrl = 'https://ppbchnypnyscwkbmoiqv.supabase.co'
 $PublishableKey = 'sb_publishable_6xfEmDvcJvxO0fuNNA6E5g_fwCeDLe2'
-$RawBase = 'https://raw.githubusercontent.com/ifalsetto/StorageUnit_SimLay/continuity/shared-data-platform/tools/falsetech-node'
+$RawBase = 'https://raw.githubusercontent.com/ifalsetto/StorageUnit_SimLay/main/tools/falsetech-node'
 
 function Write-Step([string]$Message) { Write-Host "`n=== $Message ===" -ForegroundColor Cyan }
 
