@@ -7,8 +7,8 @@ $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $CanonicalRepo = "ifalsetto/StorageUnit_SimLay"
 $FalseTechRoot = if ($env:FALSETECH_ROOT) { $env:FALSETECH_ROOT } else { "C:\FalseTech" }
-$ReportDir = Join-Path $Root ".continuity"
-$ReportPath = Join-Path $ReportDir "last_check.json"
+$ReportDir = Join-Path $Root "backend\data\exports"
+$ReportPath = Join-Path $ReportDir "continuity_preflight.json"
 
 function Normalize-Remote([string]$Remote) {
     if (-not $Remote) { return "" }
