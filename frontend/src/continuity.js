@@ -21,16 +21,41 @@ function storeSession(session) {
   else localStorage.removeItem(SESSION_KEY);
 }
 
+async function parseAuthError(response, fallback) {
+  try {
+    const data = await response.json();
+    return data.error_description || data.msg || data.message || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 async function authPassword(email, password) {
   const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
     method: 'POST',
     headers: { apikey: PUBLISHABLE_KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   });
-  if (!response.ok) throw new Error((await response.json()).error_description || 'Sign in failed.');
+  if (!response.ok) throw new Error(await parseAuthError(response, 'Sign in failed.'));
   const session = await response.json();
   storeSession(session);
   return session;
+}
+
+async function createAccount(email, password) {
+  if (password.length < 8) throw new Error('Use a password of at least 8 characters.');
+  const response = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+    method: 'POST',
+    headers: { apikey: PUBLISHABLE_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password, data: { product: 'FalseTech Continuity' } }),
+  });
+  if (!response.ok) throw new Error(await parseAuthError(response, 'Account creation failed.'));
+  const session = await response.json();
+  if (session.access_token && session.refresh_token) {
+    storeSession(session);
+    return { signedIn: true, message: 'FalseTech account created. This phone is connected.' };
+  }
+  return { signedIn: false, message: 'Account created. Confirm the verification email once, then tap Sign in.' };
 }
 
 async function refreshSession() {
@@ -101,7 +126,10 @@ function renderSearch(data, query) {
   const projectRows = (data.projects || []).map((item) => `
     <article class="row"><div><span class="tag">PROJECT</span><strong>${escapeHtml(item.canonical_name)}</strong><div class="muted">${escapeHtml(item.canonical_repository || '')}</div></div></article>`);
   const artifactRows = (data.artifacts || []).map((item) => `
-    <article class="row"><div><span class="tag">FILE</span><strong>${escapeHtml(item.canonical_name)}</strong><div class="muted">${escapeHtml(item.project_name || 'FalseTech')} · ${escapeHtml(item.source_device || 'Unknown device')}</div><small>${escapeHtml(item.original_path || '')}</small></div></article>`);
+    <article class="row">
+      <div><span class="tag">FILE</span><strong>${escapeHtml(item.canonical_name)}</strong><div class="muted">${escapeHtml(item.project_name || 'FalseTech')} · ${escapeHtml(item.source_device || 'Unknown device')}</div><small>${escapeHtml(item.original_path || '')}</small></div>
+      ${item.canonical_uri ? `<button class="download-file secondary" data-uri="${escapeHtml(encodeURIComponent(item.canonical_uri))}" data-name="${escapeHtml(encodeURIComponent(item.canonical_name))}">Open</button>` : '<span class="muted">Metadata only</span>'}
+    </article>`);
   const itemRows = (data.simlay_items || []).map((item) => `
     <article class="row"><div><span class="tag">SIMLAY</span><strong>${escapeHtml(item.final_name)}</strong><div class="muted">${escapeHtml(item.category || '')} · ${escapeHtml(item.status || '')}</div></div><div class="right">${item.asking_price != null ? `$${Number(item.asking_price).toFixed(2)}` : ''}</div></article>`);
   const rows = [...projectRows, ...artifactRows, ...itemRows];
@@ -121,8 +149,7 @@ async function registerPhone() {
 
 async function loadApp() {
   await registerPhone();
-  const overview = await rpc('falsetech_overview');
-  renderOverview(overview);
+  renderOverview(await rpc('falsetech_overview'));
   $('login-card').hidden = true;
   $('app-content').hidden = false;
   $('connection-pill').textContent = 'Connected';
@@ -141,12 +168,53 @@ async function attemptRestore() {
   }
 }
 
+async function downloadArtifact(uri, name) {
+  const prefix = 'storage://falsetech-files/';
+  if (!uri.startsWith(prefix)) throw new Error('This file is metadata-only and has no private storage copy.');
+  const key = uri.slice(prefix.length).split('/').map(encodeURIComponent).join('/');
+  let response = await fetch(`${SUPABASE_URL}/storage/v1/object/authenticated/falsetech-files/${key}`, {
+    headers: { apikey: PUBLISHABLE_KEY, Authorization: `Bearer ${state.session.access_token}` },
+  });
+  if (response.status === 401) {
+    await refreshSession();
+    response = await fetch(`${SUPABASE_URL}/storage/v1/object/authenticated/falsetech-files/${key}`, {
+      headers: { apikey: PUBLISHABLE_KEY, Authorization: `Bearer ${state.session.access_token}` },
+    });
+  }
+  if (!response.ok) throw new Error('Could not open the private FalseTech file.');
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = name;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+
 $('sign-in').addEventListener('click', async () => {
   $('login-error').textContent = '';
+  $('login-message').textContent = '';
   try {
     await authPassword($('email').value.trim(), $('password').value);
     $('password').value = '';
     await loadApp();
+  } catch (error) {
+    $('login-error').textContent = error.message || String(error);
+  }
+});
+
+$('create-account').addEventListener('click', async () => {
+  $('login-error').textContent = '';
+  $('login-message').textContent = '';
+  try {
+    const result = await createAccount($('email').value.trim(), $('password').value);
+    $('login-message').textContent = result.message;
+    if (result.signedIn) {
+      $('password').value = '';
+      await loadApp();
+    }
   } catch (error) {
     $('login-error').textContent = error.message || String(error);
   }
@@ -164,6 +232,18 @@ async function runSearch() {
 
 $('search-button').addEventListener('click', runSearch);
 $('search-input').addEventListener('keydown', (event) => { if (event.key === 'Enter') runSearch(); });
+$('search-results').addEventListener('click', async (event) => {
+  const button = event.target.closest('.download-file');
+  if (!button) return;
+  button.disabled = true;
+  try {
+    await downloadArtifact(decodeURIComponent(button.dataset.uri), decodeURIComponent(button.dataset.name));
+  } catch (error) {
+    $('search-label').textContent = error.message || String(error);
+  } finally {
+    button.disabled = false;
+  }
+});
 $('sign-out').addEventListener('click', () => {
   storeSession(null);
   $('app-content').hidden = true;
