@@ -125,12 +125,12 @@ def check_runtime_continuity(*, strict: bool | None = None) -> dict[str, Any]:
         "passed": not errors,
     }
 
-    report_path = root / "backend" / "data" / "continuity_last_check.json"
+    report_path = root / "backend" / "data" / "exports" / "continuity_runtime.json"
     report_path.parent.mkdir(parents=True, exist_ok=True)
     try:
         report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
     except OSError:
-        warnings.append("Continuity report could not be written to backend/data.")
+        warnings.append("Continuity report could not be written to backend/data/exports.")
 
     if strict and errors:
         raise RuntimeError("SimLay continuity gate failed: " + " | ".join(errors))
