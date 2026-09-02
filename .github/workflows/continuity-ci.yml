@@ -47,6 +47,22 @@ jobs:
       - name: Test backend
         run: pytest -q
 
+  falsetech-node:
+    needs: continuity
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/falsetech-node
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install node test dependencies
+        run: pip install -r requirements.txt pytest
+      - name: Test naming, safe rename, offline queue, and storage safety
+        run: pytest -q
+
   frontend:
     needs: continuity
     runs-on: ubuntu-latest

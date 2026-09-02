@@ -1,13 +1,57 @@
 {
-  "project": "StorageUnit SimLay",
+  "project_id": "simlay",
+  "project": "SimLay",
+  "aliases": [
+    "StorageUnit SimLay",
+    "Storage Unit SimLay",
+    "FalseTech Resale"
+  ],
   "canonical_repository": "ifalsetto/StorageUnit_SimLay",
-  "version": "2.0.1-continuity-master",
-  "runtime": {
-    "backend": "FastAPI + SQLite",
-    "frontend": "React + Vite",
-    "storage": "local-first SQLite + local filesystem media/exports"
+  "storefront_adapter_repository": {
+    "canonical_name": "ifalsetto/FalseTech-Resale-Wix-Storefront",
+    "historical_name": "ifalsetto/StorageUnit-Simlay",
+    "rename_status": "complete_verified_2026-09-02",
+    "role": "FalseTech Resale Wix storefront adapter only"
   },
-  "owners": ["Thomas", "Mine", "Unassigned"],
+  "version": "2.2.0-shared-data-platform-rc1",
+  "canonical_main_base": {
+    "version": "2.1.0-market-intelligence",
+    "commit": "bfb7f7a3dc061af544792036b52ab88e93d4f415",
+    "status": "reconciled_into_shared_data_platform"
+  },
+  "runtime": {
+    "backend": "FastAPI + SQLite compatibility layer + PostgreSQL shared canonical state",
+    "frontend": "React + Vite + installable PWA",
+    "local_storage": "local-first SQLite + local filesystem media/exports",
+    "shared_data": "Supabase/PostgreSQL through authenticated RLS-enforced FalseTech API",
+    "object_storage": "private Supabase Storage for safe shareable artifacts",
+    "sync_model": "event-based offline-capable synchronization; never file-sync live SQLite databases"
+  },
+  "shared_data_platform": {
+    "provider": "Supabase/PostgreSQL",
+    "organization_name": "FalseTech",
+    "project_name": "FalseTech Data Platform",
+    "project_id": "ppbchnypnyscwkbmoiqv",
+    "region": "us-east-2",
+    "security": "RLS enabled; client RPCs security-invoker; anon RPC execution revoked; security advisor clean",
+    "status": "schema_initialized_secured_and_sync_runtime_implemented"
+  },
+  "device_policy": {
+    "user_facing_names": [
+      "AJ-Desktop-Main",
+      "AJ-Desktop-2",
+      "AJ-Laptop",
+      "AJ-Phone"
+    ],
+    "opaque_ids": "internal_only",
+    "setup": "one-time Windows installer per PC; PWA login/install on phone"
+  },
+  "artifact_naming_policy": "Opaque/hash/UUID-style user-facing filenames must be replaced with readable canonical names when safe; preserve original name, path and hash in provenance.",
+  "owners": [
+    "Thomas",
+    "Mine",
+    "Unassigned"
+  ],
   "capabilities": [
     "owner-isolated inventory CRUD",
     "recoverable soft delete and audit logging",
@@ -15,15 +59,31 @@
     "evidence-gated valuation and acquisition decisions",
     "private photo-inventory JSON import",
     "idempotent source-item import tracking",
-    "exact unique-basename media relinking"
+    "exact unique-basename media relinking",
+    "market-intelligence configuration and validation",
+    "market fee and expected seller-net routing",
+    "valuation market-state adjustments",
+    "mandatory canonical continuity preflight",
+    "shared cross-device canonical PostgreSQL state",
+    "per-PC SQLite cache and offline event queue",
+    "automatic Windows background discovery and synchronization",
+    "private cross-device object/file synchronization",
+    "phone Continuity PWA with search, device status, recent changes, and private file access",
+    "device registry and provenance",
+    "automatic health checks",
+    "duplicate artifact detection",
+    "cross-device artifact conflict surfacing",
+    "human-readable artifact naming with rename provenance"
   ],
-  "continuity_policy": "merge-forward-only",
-  "private_data_policy": "Never commit local inventory database, uploads, private inventory JSON, or exports to the public repository.",
-  "status": "canonical_main",
-  "canonical_main_commit": "c4f0aedbae8888413306990616c3a9b76c96f660",
-  "canonical_pr": 12,
+  "continuity_policy": "REUSE -> CONTINUE -> EXTEND -> INTEGRATE -> MERGE -> REFACTOR -> BUILD NEW",
+  "private_data_policy": "Never commit local inventory databases, uploads, private inventory JSON, exports, credentials, refresh tokens, or device secrets to the public repository.",
+  "status": "shared_data_platform_merge_candidate",
+  "shared_data_platform_branch": "continuity/shared-data-platform",
   "validation": {
-    "pull_request_ci": "passed",
-    "main_ci": "passed"
+    "simlay_2_1_main": "passed",
+    "supabase_security_advisors": "clean",
+    "node_unit_tests": "passed_on_prior_branch_run",
+    "combined_ci": "pending_after_reconciliation_merge",
+    "real_device_acceptance": "pending"
   }
 }

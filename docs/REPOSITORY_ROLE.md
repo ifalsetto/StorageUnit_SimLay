@@ -25,13 +25,15 @@ This repository owns the actual SimLay runtime and should receive all future cor
 
 ## Does NOT own
 
-The Wix Git Integration repository currently named `ifalsetto/StorageUnit-Simlay` is **not another SimLay core implementation**. It is the source repository bound to the FalseTech resale Wix site (`falsetechresell.com`, Wix site ID `0d40e570-c619-4e42-a5c6-86a69f6314eb`). Treat that repository as a storefront adapter/site shell only.
+The Wix Git Integration repository `ifalsetto/FalseTech-Resale-Wix-Storefront` is **not another SimLay core implementation**. It is the source repository bound to the FalseTech Resale Wix site (`falsetechresell.com`). Treat that repository as a storefront adapter/site shell only.
+
+Historical name retained for provenance only: `ifalsetto/StorageUnit-Simlay`.
 
 ## Integration boundary
 
 Use this direction:
 
-`SimLay core → approved export/API contract → FalseTech Resell / Wix storefront`
+`SimLay core → approved export/API contract → FalseTech Resale / Wix storefront`
 
 Do not copy valuation, evidence, decision, inventory, or persistence logic into the Wix repository. The storefront may consume approved public/seller-facing outputs from SimLay but must not become a second source of truth.
 
@@ -48,11 +50,9 @@ If work appears in another repository, first determine whether it is:
 3. historical/provenance material that should be archived,
 4. or an actual duplicate that can be retired after verification.
 
-## Current duplicate-name resolution
-
-The two similarly named repositories should **not be Git-merged**. They have different responsibilities and unrelated histories:
+## Current repository-role resolution
 
 - `StorageUnit_SimLay` = canonical SimLay product/runtime.
-- `StorageUnit-Simlay` = Wix storefront/site integration shell for FalseTech Resell.
+- `FalseTech-Resale-Wix-Storefront` = Wix storefront/site integration shell for FalseTech Resale.
 
-Preserve both histories, but never treat them as peer implementations of SimLay.
+Preserve both histories and responsibilities, but never treat them as peer implementations of SimLay.

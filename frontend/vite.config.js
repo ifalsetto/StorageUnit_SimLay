@@ -7,6 +7,7 @@ export default defineConfig({
       input: {
         main: fileURLToPath(new URL('./index.html', import.meta.url)),
         capture: fileURLToPath(new URL('./capture.html', import.meta.url)),
+        continuity: fileURLToPath(new URL('./continuity.html', import.meta.url)),
       },
     },
   },
