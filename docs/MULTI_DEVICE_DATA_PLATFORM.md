@@ -12,7 +12,8 @@ This is an extension of the canonical SimLay runtime, not a new SimLay applicati
 - Canonical product: **SimLay**
 - Aliases: `StorageUnit SimLay`, `Storage Unit SimLay`, `FalseTech Resale`
 - Canonical core repository: `ifalsetto/StorageUnit_SimLay`
-- Wix storefront adapter: `ifalsetto/StorageUnit-Simlay`
+- Wix storefront adapter: `ifalsetto/FalseTech-Resale-Wix-Storefront`
+- Historical storefront repository name, provenance only: `ifalsetto/StorageUnit-Simlay`
 
 ## Required device names
 
@@ -25,6 +26,24 @@ User-facing device names must be readable:
 
 Opaque UUIDs may exist internally but must never be the primary user-facing label.
 
+## Current implementation
+
+The `continuity/shared-data-platform` branch now contains the first operational set-and-forget layer:
+
+- FalseTech Supabase/PostgreSQL project in the dedicated `FalseTech` organization.
+- `core`, `continuity`, and `simlay` shared schemas with RLS.
+- Auth bootstrap that makes authenticated FalseTech users workspace members.
+- Human-readable device registry.
+- Idempotent continuity event push/pull RPCs.
+- Artifact registration, SHA-256 duplicate detection, provenance fields, and canonical naming metadata.
+- Private `falsetech-files` object-storage bucket with workspace-scoped policies.
+- Universal Windows node installer plus thin wrappers for the three PCs.
+- Local SQLite node cache and offline event queue.
+- Automatic safe filename cleanup in managed/download locations; source paths are never blindly renamed.
+- Hourly private object-storage upload for shareable files up to 200 MB; live databases, installers, and source scripts remain metadata/Git managed.
+- Phone-ready `/continuity.html` PWA surface with authentication, `AJ-Phone` registration, device status, global search, artifact lookup, SimLay item search, and recent continuity events.
+- CI coverage for the existing backend/frontend plus FalseTech Node naming and offline-queue behavior.
+
 ## Target architecture
 
 ```text
@@ -32,12 +51,13 @@ Windows PC / Laptop
   -> canonical C:\FalseTech root
   -> local SQLite cache + offline queue
   -> FalseTech background sync agent
-  -> authenticated FalseTech API
+  -> authenticated FalseTech RPC/API
   -> shared PostgreSQL canonical data platform
+  -> private object storage for shareable files
 
 Phone
   -> installable SimLay/FalseTech PWA
-  -> authenticated FalseTech API
+  -> authenticated FalseTech RPC/API
   -> shared PostgreSQL canonical data platform
 ```
 
@@ -46,7 +66,7 @@ The shared PostgreSQL database is the canonical logical state. Local SQLite rema
 ## File responsibilities
 
 - PostgreSQL: structured state, project/device registry, continuity events, inventory, valuations, sales, sync metadata.
-- Object/file storage: photos, videos, PDFs, exports, backups, other large binary artifacts.
+- Object/file storage: photos, videos, PDFs, exports, backups, and other approved large binary artifacts.
 - Git: source, schemas, migrations, tests, scripts, documentation.
 - Local SQLite: offline cache and compatibility layer, not a file to share concurrently.
 
@@ -77,7 +97,7 @@ Never rename framework-required files where doing so would break the runtime. Ev
 
 ## Installation model
 
-Maintain one core Windows installer and thin device wrappers. The core installer must be idempotent and continuity-first: inspect/reuse existing `C:\FalseTech`, Continuity, repositories, and databases before creating or replacing anything.
+Maintain one core Windows installer and thin device wrappers. The core installer is idempotent and continuity-first: inspect/reuse existing `C:\FalseTech`, Continuity, repositories, and databases before creating or replacing anything.
 
 User-facing wrappers:
 
@@ -89,7 +109,7 @@ Phone installation is through the PWA; normal phone use must not require Termux.
 
 ## Acceptance test
 
-The release is not complete until all of the following pass:
+The release is not complete until all of the following pass on real devices:
 
 1. Create data on `AJ-Desktop-Main`.
 2. Shut that PC down.
