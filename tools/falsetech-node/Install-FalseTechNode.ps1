@@ -15,6 +15,7 @@ $Venv = Join-Path $NodeDir '.venv'
 $PythonExe = Join-Path $Venv 'Scripts\python.exe'
 $AgentScript = Join-Path $NodeDir 'falsetech_node.py'
 $StorageScript = Join-Path $NodeDir 'falsetech_storage_sync.py'
+$FetchScript = Join-Path $NodeDir 'falsetech_storage_fetch.py'
 $Requirements = Join-Path $NodeDir 'requirements.txt'
 $SupabaseUrl = 'https://ppbchnypnyscwkbmoiqv.supabase.co'
 $PublishableKey = 'sb_publishable_6xfEmDvcJvxO0fuNNA6E5g_fwCeDLe2'
@@ -72,7 +73,7 @@ Ensure-Admin
 $DeviceName = Resolve-DeviceName
 
 Write-Step 'Continuity-first discovery'
-New-Item -ItemType Directory -Force -Path $Root,$SystemDir,$NodeDir,$ContinuityDir,$ReportsDir | Out-Null
+New-Item -ItemType Directory -Force -Path $Root,$SystemDir,$NodeDir,$ContinuityDir,$ReportsDir,(Join-Path $Root 'Shared') | Out-Null
 $existing = Get-ChildItem $Root -Force -ErrorAction SilentlyContinue | Select-Object Name,FullName,LastWriteTime
 Write-Host "Existing FalseTech root contains $($existing.Count) top-level entries. Nothing is deleted or blindly moved." -ForegroundColor Green
 
@@ -80,6 +81,7 @@ Write-Step 'Installing FalseTech Node runtime'
 $SystemPython = Ensure-Python
 Invoke-WebRequest "$RawBase/falsetech_node.py" -OutFile $AgentScript -UseBasicParsing
 Invoke-WebRequest "$RawBase/falsetech_storage_sync.py" -OutFile $StorageScript -UseBasicParsing
+Invoke-WebRequest "$RawBase/falsetech_storage_fetch.py" -OutFile $FetchScript -UseBasicParsing
 Invoke-WebRequest "$RawBase/requirements.txt" -OutFile $Requirements -UseBasicParsing
 if (-not (Test-Path $PythonExe)) {
     & $SystemPython -m venv $Venv
@@ -121,21 +123,23 @@ Write-Host 'Enter the FalseTech/Supabase password once. The refresh token is sto
 Write-Step 'Registering device and running first scan'
 & $PythonExe $AgentScript --config $ConfigPath --once
 
-Write-Step 'Uploading shareable files to private FalseTech storage'
+Write-Step 'Synchronizing shared files'
 & $PythonExe $StorageScript --config $ConfigPath --limit 250
+& $PythonExe $FetchScript --config $ConfigPath --limit 500
 
 Write-Step 'Installing automatic startup'
-$taskName = 'FalseTech Node Agent'
 $taskCommand = "`"$PythonExe`" `"$AgentScript`" --config `"$ConfigPath`" --watch"
-schtasks.exe /Create /TN $taskName /SC ONLOGON /RL HIGHEST /TR $taskCommand /F | Out-Null
+schtasks.exe /Create /TN 'FalseTech Node Agent' /SC ONLOGON /RL HIGHEST /TR $taskCommand /F | Out-Null
 
-$storageTask = 'FalseTech Node Storage Sync'
 $storageCommand = "`"$PythonExe`" `"$StorageScript`" --config `"$ConfigPath`" --limit 500"
-schtasks.exe /Create /TN $storageTask /SC HOURLY /MO 1 /RL HIGHEST /TR $storageCommand /F | Out-Null
+schtasks.exe /Create /TN 'FalseTech Node Storage Upload' /SC HOURLY /MO 1 /RL HIGHEST /TR $storageCommand /F | Out-Null
 
-$dailyDoctor = 'FalseTech Node Daily Health Check'
+$fetchCommand = "`"$PythonExe`" `"$FetchScript`" --config `"$ConfigPath`" --limit 1000"
+schtasks.exe /Create /TN 'FalseTech Node Storage Download' /SC ONLOGON /RL HIGHEST /TR $fetchCommand /F | Out-Null
+schtasks.exe /Create /TN 'FalseTech Node Storage Download Hourly' /SC HOURLY /MO 1 /RL HIGHEST /TR $fetchCommand /F | Out-Null
+
 $doctorCommand = "`"$PythonExe`" `"$AgentScript`" --config `"$ConfigPath`" --doctor"
-schtasks.exe /Create /TN $dailyDoctor /SC DAILY /ST 07:15 /RL HIGHEST /TR $doctorCommand /F | Out-Null
+schtasks.exe /Create /TN 'FalseTech Node Daily Health Check' /SC DAILY /ST 07:15 /RL HIGHEST /TR $doctorCommand /F | Out-Null
 
 Write-Step 'Final health check'
 & $PythonExe $AgentScript --config $ConfigPath --doctor
@@ -146,6 +150,7 @@ Write-Host "Device: $DeviceName"
 Write-Host "Config: $ConfigPath"
 Write-Host "Local continuity database: $ContinuityDir\FalseTech-Node-Cache.db"
 Write-Host 'Automatic metadata/event sync: enabled at Windows logon'
-Write-Host 'Private file/object sync: every hour for safe shareable artifacts up to 200 MB'
+Write-Host 'Private shareable-file upload: every hour, up to 200 MB per file'
+Write-Host 'Incoming shared files: C:\FalseTech\Shared, fetched at logon and hourly'
 Write-Host 'Daily health check: 7:15 AM'
 Write-Host 'Opaque filenames: automatically renamed only in safe managed/download locations; source-code paths are cataloged without destructive renaming.'
