@@ -23,21 +23,19 @@ This repository owns the actual SimLay runtime and should receive all future cor
 - FalseTech Practice integration contract
 - tests, validation, deployment configuration, and continuity CI
 
-## FalseTech Resale storefront adapter
+## Does NOT own
 
-The Wix Git Integration repository historically named `ifalsetto/StorageUnit-Simlay` is **not another SimLay core implementation**. Its canonical human-readable role/name is:
+The Wix Git Integration repository `ifalsetto/FalseTech-Resale-Wix-Storefront` is **not another SimLay core implementation**. It is the source repository bound to the FalseTech Resale Wix site (`falsetechresell.com`). Treat that repository as a storefront adapter/site shell only.
 
-`ifalsetto/FalseTech-Resale-Wix-Storefront`
-
-It is the source repository bound to the FalseTech Resale Wix site (`falsetechresell.com`) and must remain a storefront adapter/site shell only. The old `StorageUnit-Simlay` name is retained only in provenance until the GitHub repository-level rename is completed.
+Historical name retained for provenance only: `ifalsetto/StorageUnit-Simlay`.
 
 ## Integration boundary
 
 Use this direction:
 
-`SimLay core → approved export/API contract → FalseTech Resale Wix storefront`
+`SimLay core → approved export/API contract → FalseTech Resale / Wix storefront`
 
-Do not copy valuation, evidence, decision, inventory, synchronization, canonical database, or persistence logic into the Wix repository. The storefront may consume approved public/seller-facing outputs from SimLay but must not become a second source of truth.
+Do not copy valuation, evidence, decision, inventory, or persistence logic into the Wix repository. The storefront may consume approved public/seller-facing outputs from SimLay but must not become a second source of truth.
 
 ## Continuity rule
 
@@ -52,10 +50,9 @@ If work appears in another repository, first determine whether it is:
 3. historical/provenance material that should be archived,
 4. or an actual duplicate that can be retired after verification.
 
-## Repository identity resolution
+## Current repository-role resolution
 
 - `StorageUnit_SimLay` = canonical SimLay product/runtime.
-- `FalseTech-Resale-Wix-Storefront` = canonical name for the FalseTech Resale Wix storefront adapter.
-- `StorageUnit-Simlay` = historical/redirect alias only after rename.
+- `FalseTech-Resale-Wix-Storefront` = Wix storefront/site integration shell for FalseTech Resale.
 
-Preserve both histories, but never treat them as peer implementations of SimLay.
+Preserve both histories and responsibilities, but never treat them as peer implementations of SimLay.
