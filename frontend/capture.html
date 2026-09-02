@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#071018" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="SimLay Capture" />
+    <title>SimLay Quick Capture</title>
+    <script src="/simlay-runtime-config.js"></script>
+  </head>
+  <body>
+    <main id="capture-root">
+      <section class="capture-shell">
+        <div class="capture-topline">
+          <div>
+            <p class="capture-eyebrow">StorageUnit SimLay</p>
+            <h1>Take photo. It uploads.</h1>
+          </div>
+          <a class="back-link" href="/">Dashboard</a>
+        </div>
+
+        <p class="capture-help">Pick the owner once. Tap <strong>Take Photo</strong>, use your phone camera, and SimLay uploads the picture automatically. No second upload button.</p>
+
+        <label class="owner-label" for="capture-owner">Owner</label>
+        <select id="capture-owner" class="owner-select">
+          <option value="Unassigned">Unassigned</option>
+          <option value="Thomas">Thomas</option>
+          <option value="Mine">Mine</option>
+        </select>
+        <p class="owner-note">Default is Unassigned so ownership is never guessed.</p>
+
+        <div class="capture-run-card">
+          <span>Capture run</span>
+          <strong id="capture-run">Finding a run…</strong>
+        </div>
+
+        <button id="take-photo" class="camera-button" type="button">Take Photo</button>
+        <input id="camera-input" type="file" accept="image/*" capture="environment" hidden />
+
+        <button id="choose-photo" class="secondary-button" type="button">Choose Existing Photo</button>
+        <input id="library-input" type="file" accept="image/*" hidden />
+
+        <div id="capture-status" class="capture-status" role="status" aria-live="polite">Connecting to SimLay…</div>
+
+        <div id="capture-preview" class="capture-preview" hidden>
+          <img id="capture-preview-image" alt="Latest captured item" />
+          <div>
+            <strong id="capture-preview-name"></strong>
+            <span id="capture-preview-result"></span>
+          </div>
+        </div>
+
+        <div class="capture-footnote">Each new photo stays in the same owner-specific capture run until you change the owner.</div>
+      </section>
+    </main>
+    <script type="module" src="/src/capture.js"></script>
+  </body>
+</html>

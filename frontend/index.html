@@ -12,9 +12,14 @@
     <link rel="icon" href="/icons/icon-192.png" />
     <title>StorageUnit SimLay</title>
     <script src="/simlay-runtime-config.js"></script>
+    <style>
+      .simlay-quick-capture{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));z-index:1000;padding:14px 18px;border-radius:999px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;text-decoration:none;font:900 15px/1 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Arial,sans-serif;box-shadow:0 14px 34px rgba(37,99,235,.38);border:1px solid rgba(255,255,255,.18)}
+      .simlay-quick-capture:focus-visible{outline:3px solid #fff;outline-offset:3px}
+    </style>
   </head>
   <body>
     <div id="root"></div>
+    <a class="simlay-quick-capture" href="/capture.html">Take Photo</a>
     <script type="module" src="/src/App.jsx"></script>
   </body>
 </html>
