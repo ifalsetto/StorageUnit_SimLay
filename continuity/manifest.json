@@ -14,10 +14,11 @@
     "role": "FalseTech Resale Wix storefront adapter only"
   },
   "version": "2.2.0-shared-data-platform-rc1",
-  "canonical_main_base": {
-    "version": "2.1.0-market-intelligence",
-    "commit": "bfb7f7a3dc061af544792036b52ab88e93d4f415",
-    "status": "reconciled_into_shared_data_platform"
+  "canonical_main": {
+    "commit": "7b59ed03ff6823160c4715ab01d7997be22ba419",
+    "previous_version": "2.1.0-market-intelligence",
+    "previous_commit": "bfb7f7a3dc061af544792036b52ab88e93d4f415",
+    "status": "shared_data_platform_canonical_on_main"
   },
   "runtime": {
     "backend": "FastAPI + SQLite compatibility layer + PostgreSQL shared canonical state",
@@ -34,7 +35,7 @@
     "project_id": "ppbchnypnyscwkbmoiqv",
     "region": "us-east-2",
     "security": "RLS enabled; client RPCs security-invoker; anon RPC execution revoked; security advisor clean",
-    "status": "schema_initialized_secured_and_sync_runtime_implemented"
+    "status": "canonical_implementation_merged"
   },
   "device_policy": {
     "user_facing_names": [
@@ -77,13 +78,13 @@
   ],
   "continuity_policy": "REUSE -> CONTINUE -> EXTEND -> INTEGRATE -> MERGE -> REFACTOR -> BUILD NEW",
   "private_data_policy": "Never commit local inventory databases, uploads, private inventory JSON, exports, credentials, refresh tokens, or device secrets to the public repository.",
-  "status": "shared_data_platform_merge_candidate",
-  "shared_data_platform_branch": "continuity/shared-data-platform",
+  "status": "canonical_main_pending_real_device_acceptance",
   "validation": {
-    "simlay_2_1_main": "passed",
+    "simlay_2_1_preserved": "passed",
     "supabase_security_advisors": "clean",
-    "node_unit_tests": "passed_on_prior_branch_run",
-    "combined_ci": "pending_after_reconciliation_merge",
+    "pull_request_ci": "passed_run_118",
+    "main_ci": "passed_run_119",
+    "vercel": "passed",
     "real_device_acceptance": "pending"
   }
 }
