@@ -10,7 +10,27 @@ on:
       - main
 
 jobs:
+  continuity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify canonical lineage and execution gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f AGENTS.md
+          grep -Fq 'ifalsetto/StorageUnit_SimLay' AGENTS.md
+          grep -Fq 'CONTINUITY_CHECK_WINDOWS.ps1 -RequireCanonical' AGENTS.md
+          test -f CONTINUITY_CHECK_WINDOWS.ps1
+          test -f READY_SIMLAY_WINDOWS.ps1
+          test -f backend/config/market_intelligence.yaml
+          if [ -f FALSETECH_REPOSITORY_ROLE.md ] && grep -Fiq 'NOT THE SIMLAY CORE' FALSETECH_REPOSITORY_ROLE.md; then
+            echo 'Canonical repo is incorrectly marked as non-core.' >&2
+            exit 1
+          fi
+
   backend:
+    needs: continuity
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -22,10 +42,13 @@ jobs:
           python-version: '3.11'
       - name: Install backend
         run: pip install -r requirements.txt pytest
+      - name: Validate config
+        run: python scripts/validate_config.py
       - name: Test backend
         run: pytest -q
 
   falsetech-node:
+    needs: continuity
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -37,10 +60,11 @@ jobs:
           python-version: '3.11'
       - name: Install node test dependencies
         run: pip install -r requirements.txt pytest
-      - name: Test naming, safe rename, and offline queue
+      - name: Test naming, safe rename, offline queue, and storage safety
         run: pytest -q
 
   frontend:
+    needs: continuity
     runs-on: ubuntu-latest
     defaults:
       run:
