@@ -19,10 +19,13 @@
   },
   "shared_data_platform": {
     "provider": "Supabase/PostgreSQL",
-    "required_organization_name": "FalseTech",
+    "organization_name": "FalseTech",
+    "organization_id": "rxgdcilaabbreloiqatj",
     "existing_apex_dashboard_organization_allowed": false,
     "project_name": "FalseTech Data Platform",
-    "status": "waiting_for_dedicated_falsetech_organization_to_be_visible_to_connected_supabase"
+    "project_id": "ppbchnypnyscwkbmoiqv",
+    "region": "us-east-2",
+    "status": "created_schema_initialized_and_secured"
   },
   "device_policy": {
     "user_facing_names": ["AJ-Desktop-Main", "AJ-Desktop-2", "AJ-Laptop", "AJ-Phone"],
@@ -40,6 +43,8 @@
   "validation": {
     "canonical_main_ci": "passed",
     "storefront_repository_rename": "verified",
+    "supabase_project": "active_healthy",
+    "supabase_security_advisors": "clean",
     "shared_data_platform": "implementation_in_progress"
   }
 }
