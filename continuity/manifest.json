@@ -10,7 +10,7 @@
   "storefront_adapter_repository": {
     "canonical_name": "ifalsetto/FalseTech-Resale-Wix-Storefront",
     "historical_name": "ifalsetto/StorageUnit-Simlay",
-    "rename_status": "github_repository_rename_pending",
+    "rename_status": "complete_verified_2026-09-02",
     "role": "FalseTech Resale Wix storefront adapter only"
   },
   "version": "2.1.0-shared-data-platform-dev",
@@ -26,7 +26,7 @@
     "required_organization_name": "FalseTech",
     "existing_apex_dashboard_organization_allowed": false,
     "project_name": "FalseTech Data Platform",
-    "status": "waiting_for_dedicated_falsetech_organization"
+    "status": "waiting_for_dedicated_falsetech_organization_to_be_visible_to_connected_supabase"
   },
   "device_policy": {
     "user_facing_names": [
@@ -65,6 +65,7 @@
   "shared_data_platform_branch": "continuity/shared-data-platform",
   "validation": {
     "canonical_main_ci": "passed",
+    "storefront_repository_rename": "verified",
     "shared_data_platform": "implementation_in_progress"
   }
 }
