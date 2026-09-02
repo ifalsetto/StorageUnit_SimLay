@@ -19,11 +19,16 @@
       </section>
 
       <section id="login-card" class="card">
-        <h2>Sign in</h2>
+        <h2>FalseTech account</h2>
+        <p class="muted">Use one account on your phone and all three PCs.</p>
         <label>Email<input id="email" type="email" autocomplete="email" /></label>
-        <label>Password<input id="password" type="password" autocomplete="current-password" /></label>
-        <button id="sign-in">Sign in</button>
+        <label>Password<input id="password" type="password" minlength="8" autocomplete="current-password" /></label>
+        <div class="button-row">
+          <button id="sign-in">Sign in</button>
+          <button id="create-account" class="secondary">Create account</button>
+        </div>
         <p id="login-error" class="error"></p>
+        <p id="login-message" class="muted"></p>
       </section>
 
       <section id="app-content" hidden>
