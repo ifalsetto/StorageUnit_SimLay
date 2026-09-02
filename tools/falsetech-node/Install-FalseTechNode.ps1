@@ -14,6 +14,7 @@ $ConfigPath = Join-Path $SystemDir 'FalseTech-Node.json'
 $Venv = Join-Path $NodeDir '.venv'
 $PythonExe = Join-Path $Venv 'Scripts\python.exe'
 $AgentScript = Join-Path $NodeDir 'falsetech_node.py'
+$StorageScript = Join-Path $NodeDir 'falsetech_storage_sync.py'
 $Requirements = Join-Path $NodeDir 'requirements.txt'
 $SupabaseUrl = 'https://ppbchnypnyscwkbmoiqv.supabase.co'
 $PublishableKey = 'sb_publishable_6xfEmDvcJvxO0fuNNA6E5g_fwCeDLe2'
@@ -78,6 +79,7 @@ Write-Host "Existing FalseTech root contains $($existing.Count) top-level entrie
 Write-Step 'Installing FalseTech Node runtime'
 $SystemPython = Ensure-Python
 Invoke-WebRequest "$RawBase/falsetech_node.py" -OutFile $AgentScript -UseBasicParsing
+Invoke-WebRequest "$RawBase/falsetech_storage_sync.py" -OutFile $StorageScript -UseBasicParsing
 Invoke-WebRequest "$RawBase/requirements.txt" -OutFile $Requirements -UseBasicParsing
 if (-not (Test-Path $PythonExe)) {
     & $SystemPython -m venv $Venv
@@ -119,10 +121,17 @@ Write-Host 'Enter the FalseTech/Supabase password once. The refresh token is sto
 Write-Step 'Registering device and running first scan'
 & $PythonExe $AgentScript --config $ConfigPath --once
 
+Write-Step 'Uploading shareable files to private FalseTech storage'
+& $PythonExe $StorageScript --config $ConfigPath --limit 250
+
 Write-Step 'Installing automatic startup'
 $taskName = 'FalseTech Node Agent'
 $taskCommand = "`"$PythonExe`" `"$AgentScript`" --config `"$ConfigPath`" --watch"
 schtasks.exe /Create /TN $taskName /SC ONLOGON /RL HIGHEST /TR $taskCommand /F | Out-Null
+
+$storageTask = 'FalseTech Node Storage Sync'
+$storageCommand = "`"$PythonExe`" `"$StorageScript`" --config `"$ConfigPath`" --limit 500"
+schtasks.exe /Create /TN $storageTask /SC HOURLY /MO 1 /RL HIGHEST /TR $storageCommand /F | Out-Null
 
 $dailyDoctor = 'FalseTech Node Daily Health Check'
 $doctorCommand = "`"$PythonExe`" `"$AgentScript`" --config `"$ConfigPath`" --doctor"
@@ -136,6 +145,7 @@ Write-Host "`nFALSETECH NODE INSTALLED" -ForegroundColor Green
 Write-Host "Device: $DeviceName"
 Write-Host "Config: $ConfigPath"
 Write-Host "Local continuity database: $ContinuityDir\FalseTech-Node-Cache.db"
-Write-Host 'Automatic sync: enabled at Windows logon'
+Write-Host 'Automatic metadata/event sync: enabled at Windows logon'
+Write-Host 'Private file/object sync: every hour for safe shareable artifacts up to 200 MB'
 Write-Host 'Daily health check: 7:15 AM'
 Write-Host 'Opaque filenames: automatically renamed only in safe managed/download locations; source-code paths are cataloged without destructive renaming.'
