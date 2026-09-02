@@ -1,4 +1,4 @@
-connectors_version: "1.0"
+connectors_version: "1.1"
 vision_providers:
   openai:
     enabled: true
@@ -18,8 +18,9 @@ market_connectors:
     marketplace_id: "EBAY_US"
     scope: "https://api.ebay.com/oauth/api_scope"
     endpoints:
-      sold_listings: true
-      active_listings: false
+      sold_listings: false
+      active_listings: true
+    sold_data_note: "Browse API connector does not claim sold coverage. Add approved sold comps through Evidence using eBay Product Research/manual or another approved sold-data source."
   tiktok_shop:
     enabled: false
     status: "pending_approval"

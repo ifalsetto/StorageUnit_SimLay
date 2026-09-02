@@ -1,11 +1,13 @@
 $ErrorActionPreference = "Stop"
 
-Write-Host "=== StorageUnit SimLay Install ==="
-Write-Host "Installing backend dependencies..."
-
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Backend = Join-Path $Root "backend"
 $Frontend = Join-Path $Root "frontend"
+
+& (Join-Path $Root "CONTINUITY_CHECK_WINDOWS.ps1") -RequireCanonical | Out-Null
+
+Write-Host "=== StorageUnit SimLay Install ==="
+Write-Host "Installing backend dependencies..."
 
 Set-Location $Backend
 
@@ -25,8 +27,9 @@ Write-Host "Backend ready."
 if (Test-Path $Frontend) {
     Write-Host "Installing frontend dependencies..."
     Set-Location $Frontend
-    npm install
+    npm ci
     Write-Host "Frontend ready."
 }
 
-Write-Host "Install complete. Run START_APP_WINDOWS.ps1 next."
+& (Join-Path $Root "CONTINUITY_CHECK_WINDOWS.ps1") -RequireCanonical | Out-Null
+Write-Host "Install complete. Run READY_SIMLAY_WINDOWS.ps1 for full verification and startup."

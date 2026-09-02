@@ -1,51 +1,52 @@
-# Release Notes — StorageUnit SimLay Public Deploy Release
+# Release Notes — StorageUnit SimLay
 
-## Release status
+## 2.1.0 — Market Intelligence + Continuity Runtime
 
-Deployable local/public handoff package.
+Status: canonical FalseTech SimLay core upgrade.
 
-## Included modules
+### Continuity enforcement
 
-- FastAPI backend
-- React/Vite frontend
-- SQLite local database
-- Local filesystem uploads and exports
-- Config-driven project profiles
-- OpenAI Vision adapter with strict JSON prompt contract
-- Mock Vision provider for no-cost dry runs
-- Video keyframe extraction service
-- Manual structured evidence workflow
-- Screenshot OCR evidence parser using pytesseract when available
-- Evidence parser fallback using pasted OCR/text
-- Stronger dedupe engine using normalized names, token similarity, and category/condition checks
-- Percentile-based valuation engine with outlier filtering
-- Active-listing discount and conservative fallback rules
-- Official eBay API connector scaffold
-- URL refresh adapter framework with fail-closed behavior
-- Exact Wix CSV exporter
-- Audit JSON exporter
-- 12-test backend suite
-- Windows install/start/test scripts
-- Docker Compose deployment files
+- Canonical core remains `ifalsetto/StorageUnit_SimLay`.
+- `ifalsetto/StorageUnit-Simlay` remains the Wix storefront adapter and is not merged as a second core.
+- Added `CONTINUITY_CHECK_WINDOWS.ps1` to scan active FalseTech project repositories, distinguish reference copies, verify the canonical origin, and stop on likely parallel-core conflicts.
+- Added `READY_SIMLAY_WINDOWS.ps1` as the preferred one-command sync/install/test/build/start workflow.
+- Existing install, start, test, frontend build, Android signing, AAB build, and Play-release verification scripts now require continuity preflight.
+- Runtime startup performs an additional lineage check; strict Windows launches set `SIMLAY_CONTINUITY_STRICT=1`.
+- CI validates canonical lineage before backend tests and frontend builds.
 
-## Known limits
+### Valuation intelligence
 
-- Real OpenAI Vision requires `OPENAI_API_KEY`.
-- OCR quality depends on local Tesseract availability. If unavailable, the app preserves the evidence record and flags OCR failure instead of guessing.
-- eBay sold-comps access is not enabled by default. The connector scaffold is present, but sold data requires an approved/compliant data source.
-- Facebook Marketplace refresh remains disabled because it is login-wall/partner-only.
+- Preserved percentile/IQR valuation architecture rather than replacing it.
+- Enforced the existing `max_comp_age_days` rule that previously existed in configuration but was not applied by valuation.
+- Added source-authority weighting so verified sold evidence has more influence than active listings or MSRP.
+- Added date/freshness decay for older sold evidence.
+- Added temporary, expiring market-state signals separate from sold-comp value.
+- Gross comp value, market-adjusted value, marketplace fee estimate, and expected seller net are stored separately.
+- Added marketplace route estimation and recommended-marketplace persistence.
+- Added deterministic fee/source/routing tests.
 
-## Verified checks
+### Marketplace policy
 
-- Config validation passed.
-- SQLite init passed.
-- Backend pytest suite passed: 12 passed.
+- Added `backend/config/market_intelligence.yaml` as the date-stamped policy source for fees, source authority, freshness, routing, and market-state signals.
+- Corrected the eBay connector configuration to match actual capability: active Browse search is supported when credentials are enabled; sold-listing API coverage is not claimed.
+- Added fee models/routing support for eBay, Mercari, Reverb, Poshmark, and TCGplayer, with local/Facebook cash routes available for explicit planning rather than automatic recommendation.
+- Policy age is exposed and produces a stale-policy warning instead of silently treating old marketplace economics as current.
 
-## Pro Command Center UX Upgrade
+### UI/API
 
-- Replaced basic single-page form UI with a professional dashboard UI.
-- Added sidebar navigation and workflow-specific screens.
-- Added item review cards and selected-item editor.
-- Added evidence locker UI for URL comps and screenshot comps.
-- Added export download center.
-- Added frontend-local START_APP_WINDOWS.ps1 shim to recover if user runs start command from /frontend.
+- Added `/api/market/policy`, `/api/market/estimate-fee`, `/api/market/estimate-routes`, and `/api/market/revalue/{item_id}`.
+- Inventory cards now show market state, adjusted gross value, recommended marketplace, estimated fee, expected net, and policy date.
+- Added one-tap `Revalue` from the inventory dashboard.
+- Inventory summary now includes expected-net totals in the client view.
+
+### Data safety
+
+- Market fields are added to existing SQLite databases through an idempotent migration; existing item/evidence records are preserved.
+- Continuity reports are written under the already-ignored runtime exports area instead of creating source-tree noise.
+- Dirty local work is preserved before safe `main` synchronization in the READY workflow.
+
+## Earlier public-deploy baseline
+
+Included FastAPI, React/Vite, SQLite, local filesystem uploads/exports, configuration-driven profiles, OpenAI Vision/mock providers, video keyframe extraction, OCR evidence parsing, dedupe, percentile valuation, eBay connector scaffold, URL refresh adapters, Wix CSV exports, audit exports, Windows helpers, Docker Compose, and the Pro Command Center UI.
+
+Known external requirements remain: OpenAI Vision needs `OPENAI_API_KEY`; OCR quality depends on Tesseract when local OCR is used; eBay sold comps require approved/manual Product Research evidence rather than being fabricated from active Browse API results; Facebook Marketplace automated refresh remains constrained by platform access.

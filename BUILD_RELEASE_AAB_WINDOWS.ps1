@@ -4,6 +4,7 @@ param(
     [int]$VersionCode = 1
 )
 $ErrorActionPreference = "Stop"
+& (Join-Path $PSScriptRoot "CONTINUITY_CHECK_WINDOWS.ps1") -RequireCanonical | Out-Null
 if (-not $AppUrl.StartsWith("https://")) { throw "AppUrl must be HTTPS for Google Play release: $AppUrl" }
 $androidRoot = Join-Path $PSScriptRoot "mobile\android"
 $keyProps = Join-Path $androidRoot "key.properties"
@@ -18,4 +19,5 @@ if (Test-Path ".\gradlew.bat") {
 }
 $aab = Join-Path $androidRoot "app\build\outputs\bundle\release\app-release.aab"
 if (-not (Test-Path $aab)) { throw "AAB was not created at $aab" }
+& (Join-Path $PSScriptRoot "CONTINUITY_CHECK_WINDOWS.ps1") -RequireCanonical | Out-Null
 Write-Host "Google Play AAB ready: $aab" -ForegroundColor Green

@@ -67,6 +67,14 @@ export const SimLayApi = {
     method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload),
   }),
   valueItem: (itemId) => api(`/api/items/${itemId}/value`, { method: 'POST' }),
+  revalueItem: (itemId) => api(`/api/market/revalue/${itemId}`, { method: 'POST' }),
+  marketPolicy: () => api('/api/market/policy'),
+  estimateMarketFee: (payload) => api('/api/market/estimate-fee', {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload),
+  }),
+  estimateMarketRoutes: (payload) => api('/api/market/estimate-routes', {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload),
+  }),
   importPhotoInventory: async (runId, file, options = {}) => {
     const params = new URLSearchParams({
       owner: options.owner || 'Unassigned',

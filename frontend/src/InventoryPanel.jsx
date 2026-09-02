@@ -21,7 +21,7 @@ function parseMediaIds(item) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) parsed.forEach((id) => id && !ids.includes(id) && ids.push(id));
     } catch {
-      // Legacy malformed media JSON: keep only the explicit representative image.
+      // Keep the explicit representative image when legacy media JSON is malformed.
     }
   }
   return ids;
@@ -61,6 +61,26 @@ function makeDraft(item) {
 function money(value) {
   const n = Number(value);
   return Number.isFinite(n) ? `$${n.toFixed(n % 1 === 0 ? 0 : 2)}` : "—";
+}
+
+function titleCase(value) {
+  return String(value || "").replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function MarketRoute({ item }) {
+  if (item.market_adjusted_value == null && item.expected_net == null) {
+    return <div className="market-route-row market-route-empty">No market route yet. Add comps, then Revalue.</div>;
+  }
+  return (
+    <div className="market-route-row">
+      <span><b>{item.market_state || "NORMAL"}</b> market</span>
+      <span>Adjusted gross <b>{money(item.market_adjusted_value)}</b></span>
+      <span>Route <b>{titleCase(item.recommended_marketplace) || "—"}</b></span>
+      <span>Fee <b>{money(item.estimated_market_fee)}</b></span>
+      <span>Expected net <b>{money(item.expected_net)}</b></span>
+      {item.market_policy_as_of && <span>Policy {item.market_policy_as_of}</span>}
+    </div>
+  );
 }
 
 export default function InventoryPanel({ runId }) {
@@ -122,14 +142,19 @@ export default function InventoryPanel({ runId }) {
   }, [items, ownerFilter, actionFilter, search, showTrash]);
 
   const metrics = useMemo(() => {
-    let low = 0, expected = 0, high = 0, asking = 0;
+    let low = 0;
+    let expected = 0;
+    let high = 0;
+    let asking = 0;
+    let net = 0;
     filteredItems.forEach((item) => {
       low += Number(item.display_value_low ?? item.manual_value_low ?? item.value_p25 ?? 0) || 0;
       expected += Number(item.display_value_expected ?? item.manual_value_expected ?? item.value_p50 ?? item.value_export ?? 0) || 0;
       high += Number(item.display_value_high ?? item.manual_value_high ?? item.value_p75 ?? 0) || 0;
       asking += Number(item.asking_price ?? 0) || 0;
+      net += Number(item.expected_net ?? 0) || 0;
     });
-    return { count: filteredItems.length, low, expected, high, asking };
+    return { count: filteredItems.length, low, expected, high, asking, net };
   }, [filteredItems]);
 
   function beginEdit(item) {
@@ -163,12 +188,35 @@ export default function InventoryPanel({ runId }) {
         asking_price: numberOrNull(draft.asking_price),
         notes: draft.notes || null,
       });
-      setNotice("Saved.");
+      setNotice("Saved. Revalue if identification, condition, category, or comps changed.");
       setEditingId("");
       setDraft(null);
       await refreshInventory();
     } catch (err) {
       setError(err.message || "Failed to save item");
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function revalueItem(item) {
+    setBusyId(item.item_id);
+    setError("");
+    try {
+      const result = await SimLayApi.revalueItem(item.item_id);
+      const valuation = result.valuation || {};
+      if (!valuation.passed) {
+        const reason = String(valuation.reason || "valuation failed").replaceAll("_", " ");
+        setNotice(`Revalue stopped: ${reason}. Add or improve comps.`);
+      } else {
+        const route = valuation.market_routes?.recommended;
+        setNotice(route
+          ? `Revalued: ${money(valuation.market_adjusted_value)} gross → ${titleCase(route.marketplace)} → ${money(route.expected_net)} expected net.`
+          : "Revalued. No eligible marketplace route was produced.");
+      }
+      await refreshInventory();
+    } catch (err) {
+      setError(err.message || "Failed to revalue item");
     } finally {
       setBusyId("");
     }
@@ -235,7 +283,7 @@ export default function InventoryPanel({ runId }) {
         <div>
           <p className="eyebrow">Owner-separated inventory</p>
           <h2>{showTrash ? "Recoverable Trash" : "Quick Inventory"}</h2>
-          <p className="owner-subtitle">Thomas, Mine, and Unassigned stay explicit. Nothing is auto-reassigned.</p>
+          <p className="owner-subtitle">Gross value and expected seller net are tracked separately. Thomas, Mine, and Unassigned stay explicit.</p>
         </div>
         <div className="inventory-header-actions">
           <label className="trash-toggle"><input type="checkbox" checked={showTrash} onChange={(e) => setShowTrash(e.target.checked)} />Trash</label>
@@ -259,6 +307,7 @@ export default function InventoryPanel({ runId }) {
           <div><span>Expected</span><strong>{money(metrics.expected)}</strong></div>
           <div><span>High</span><strong>{money(metrics.high)}</strong></div>
           <div><span>Asking</span><strong>{money(metrics.asking)}</strong></div>
+          <div><span>Expected Net</span><strong>{money(metrics.net)}</strong></div>
         </div>
       </>}
 
@@ -281,10 +330,12 @@ export default function InventoryPanel({ runId }) {
               {!isEditing && <>
                 <div className="owner-meta"><span>{item.item_action || "Unassigned"}</span><span>{item.category || "Uncategorized"}</span><span>{item.visible_condition || "Unknown"}</span><span>{item.source || "Unknown source"}</span></div>
                 <div className="owner-value-row"><span>{money(item.display_value_low)}–{money(item.display_value_high)}</span><strong>{money(item.asking_price ?? item.display_value_expected)}</strong></div>
+                <MarketRoute item={item} />
                 {item.notes && <p className="inventory-notes">{item.notes}</p>}
                 {!item.deleted_at && <div className="owner-quick-row">
                   <label>Owner<select value={item.owner || "Unassigned"} disabled={isBusy} onChange={(e) => quickOwner(item, e.target.value)}>{OWNER_VALUES.map((owner) => <option key={owner}>{owner}</option>)}</select></label>
                   <div className="owner-card-actions">
+                    <button type="button" className="primary-button" disabled={isBusy} onClick={() => revalueItem(item)}>{isBusy ? "Working..." : "Revalue"}</button>
                     <button type="button" className="secondary-button" onClick={() => beginEdit(item)}>Edit</button>
                     <button type="button" className="secondary-button" disabled={isBusy} onClick={() => duplicateItem(item)}>Duplicate</button>
                     {!isDeleting ? <button type="button" className="danger-button" onClick={() => setDeleteId(item.item_id)}>Delete</button> : <div className="delete-confirm"><span>Move to trash?</span><button type="button" className="danger-button" disabled={isBusy} onClick={() => confirmDelete(item)}>Confirm</button><button type="button" className="secondary-button" onClick={() => setDeleteId("")}>Cancel</button></div>}
