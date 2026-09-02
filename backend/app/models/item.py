@@ -74,7 +74,6 @@ class ItemModel(SimLayModel):
         "value_export",
         "market_adjusted_value",
         "estimated_market_fee",
-        "expected_net",
     )
     @classmethod
     def valuation_values_nonnegative(cls, value: Optional[float]) -> Optional[float]:
