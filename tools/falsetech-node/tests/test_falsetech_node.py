@@ -1,11 +1,19 @@
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
+import sys
 
-MODULE_PATH = Path(__file__).resolve().parents[1] / "falsetech_node.py"
+MODULE_ROOT = Path(__file__).resolve().parents[1]
+MODULE_PATH = MODULE_ROOT / "falsetech_node.py"
 spec = spec_from_file_location("falsetech_node", MODULE_PATH)
 node = module_from_spec(spec)
 assert spec and spec.loader
+sys.modules["falsetech_node"] = node
 spec.loader.exec_module(node)
+
+storage_spec = spec_from_file_location("falsetech_storage_sync", MODULE_ROOT / "falsetech_storage_sync.py")
+storage = module_from_spec(storage_spec)
+assert storage_spec and storage_spec.loader
+storage_spec.loader.exec_module(storage)
 
 
 def test_opaque_hash_and_uuid_names_are_detected():
@@ -45,3 +53,11 @@ def test_local_queue_is_idempotent_after_mark_sent(tmp_path):
     assert pending[0]["operation_id"] == operation_id
     state.mark_sent([operation_id])
     assert state.unsent() == []
+
+
+def test_live_databases_and_installers_are_metadata_only():
+    assert ".db" in storage.SKIP_SUFFIXES
+    assert ".sqlite" in storage.SKIP_SUFFIXES
+    assert "Database" in storage.SKIP_KINDS
+    assert "Installer" in storage.SKIP_KINDS
+    assert storage.MAX_UPLOAD_BYTES == 200 * 1024 * 1024
