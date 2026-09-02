@@ -5,12 +5,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.core.database import init_db
-from app.routers import connectors, decisions, evidence, exports, imports, items, media, ocr, practice, process, profiles, runs
+from app.core.continuity import check_runtime_continuity
+from app.core.database import db_session, init_db
+from app.core.market_schema import ensure_market_schema
+from app.routers import connectors, decisions, evidence, exports, imports, items, market, media, ocr, practice, process, profiles, runs
 
 BASE_DIR = Path(__file__).resolve().parents[1]
+APP_VERSION = "2.1.0-market-intelligence"
 
-app = FastAPI(title="StorageUnit SimLay", version="2.0.0-continuity-master")
+app = FastAPI(title="StorageUnit SimLay", version=APP_VERSION)
 
 cors_origins = os.getenv(
     "SIMLAY_CORS_ORIGINS",
@@ -28,7 +31,10 @@ app.add_middleware(
 
 @app.on_event("startup")
 def startup():
+    check_runtime_continuity()
     init_db()
+    with db_session() as conn:
+        ensure_market_schema(conn)
     (BASE_DIR / "data" / "uploads").mkdir(parents=True, exist_ok=True)
     (BASE_DIR / "data" / "exports").mkdir(parents=True, exist_ok=True)
 
@@ -37,12 +43,14 @@ def startup():
 def root():
     return {
         "app": "StorageUnit SimLay",
-        "version": "2.0.0-continuity-master",
+        "version": APP_VERSION,
         "status": "ok",
         "canonical_repository": "ifalsetto/StorageUnit_SimLay",
         "inventory_owners": ["Thomas", "Mine", "Unassigned"],
         "docs": "/docs",
         "ocr": "/api/ocr/health",
+        "market_policy": "/api/market/policy",
+        "market_estimate": "/api/market/estimate-routes",
         "falsetech_practice": "/api/practice/simlay/{run_id}",
         "private_inventory_import": "/api/imports/photo-inventory/{run_id}",
     }
@@ -57,6 +65,7 @@ app.include_router(exports.router)
 app.include_router(process.router)
 app.include_router(profiles.router)
 app.include_router(connectors.router)
+app.include_router(market.router)
 app.include_router(decisions.router)
 app.include_router(ocr.router)
 app.include_router(practice.router)
