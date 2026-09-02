@@ -1,0 +1,33 @@
+{
+  "name": "FalseTech Continuity",
+  "short_name": "Continuity",
+  "description": "Find and continue FalseTech work across devices without remembering file paths.",
+  "id": "/continuity.html",
+  "start_url": "/continuity.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#111827",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Continuity",
+      "short_name": "Continuity",
+      "url": "/continuity.html"
+    },
+    {
+      "name": "Quick Capture",
+      "short_name": "Capture",
+      "url": "/capture.html"
+    },
+    {
+      "name": "SimLay",
+      "short_name": "SimLay",
+      "url": "/"
+    }
+  ]
+}
