@@ -43,23 +43,21 @@ def policy_status(config: dict[str, Any], *, stale_after_days: int = 45) -> dict
 
 
 def evidence_weight(evidence: dict[str, Any], config: dict[str, Any]) -> tuple[float, dict[str, Any]]:
-    """Return transparent authority/freshness weight for one comp.
-
-    Weighting never creates evidence. It only changes the influence of evidence
-    already saved by SimLay.
-    """
+    """Return transparent authority/freshness weight for one saved comp."""
     cfg = policy(config)
     authority = cfg.get("source_authority", {})
     listing_type = _slug(evidence.get("listing_type"))
     source_name = _slug(evidence.get("source_name"))
     platform = _slug(evidence.get("url_platform"))
-    notes_text = _text(evidence.get("notes"), evidence.get("url_title"))
+    notes_text = _text(evidence.get("notes"), evidence.get("url_title"), evidence.get("source_name"))
 
     key = None
     if listing_type == "active" or bool(evidence.get("is_active_listing")):
         key = "active_listing"
     elif "retail" in source_name or "msrp" in source_name:
         key = "retail_msrp"
+    elif platform == "ebay" and ("product research" in notes_text or "terapeak" in notes_text):
+        key = "ebay_product_research"
     elif "accepted offer" in notes_text or "best offer" in notes_text:
         key = "accepted_offer"
     else:
@@ -176,6 +174,17 @@ def estimate_marketplace_fee(
         fee = 2.95 if price < 15.0 else price * 0.20
         base = price
         applied = "flat_2.95_under_15" if price < 15.0 else "20_percent"
+    elif fee_model == "reverb_us":
+        default = platform_cfg.get("default", {}) or {}
+        selling_base = price + shipping
+        processing_base = price + shipping + tax
+        fee = selling_base * float(default.get("selling_percent", 5.0)) / 100.0
+        fee += processing_base * float(default.get("processing_percent", 3.19)) / 100.0
+        fee += float(default.get("processing_fixed", 0.49))
+        base = processing_base
+        applied = "5.00_selling_plus_3.19_processing"
+        if tax <= 0:
+            warnings.append("Tax was not supplied; Reverb processing estimate excludes buyer tax.")
     elif fee_model == "tcgplayer_marketplace_standard":
         default = platform_cfg.get("default", {}) or {}
         commission_base = price + shipping
@@ -195,10 +204,10 @@ def estimate_marketplace_fee(
         default = platform_cfg.get("default", {}) or {}
         pct, matched_term = _category_percent(platform_cfg, category_text)
         base = price + shipping
-        if key in {"ebay", "reverb"}:
+        if key == "ebay":
             base += tax
             if tax <= 0:
-                warnings.append(f"Tax was not supplied; {key} fee estimate may be slightly low.")
+                warnings.append("Tax was not supplied; eBay fee estimate may be slightly low.")
         fee = base * pct / 100.0
         if "fixed" in default:
             fee += float(default.get("fixed", 0.0))
