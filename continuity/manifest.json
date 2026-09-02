@@ -1,12 +1,31 @@
 {
-  "project": "StorageUnit SimLay",
+  "project_id": "simlay",
+  "project": "SimLay",
+  "aliases": [
+    "StorageUnit SimLay",
+    "Storage Unit SimLay",
+    "FalseTech Resale"
+  ],
   "canonical_repository": "ifalsetto/StorageUnit_SimLay",
-  "version": "2.0.1-continuity-master",
+  "storefront_adapter_repository": "ifalsetto/StorageUnit-Simlay",
+  "version": "2.1.0-shared-data-platform-dev",
   "runtime": {
-    "backend": "FastAPI + SQLite",
-    "frontend": "React + Vite",
-    "storage": "local-first SQLite + local filesystem media/exports"
+    "backend": "FastAPI + SQLite compatibility layer",
+    "frontend": "React + Vite + installable PWA",
+    "local_storage": "local-first SQLite + local filesystem media/exports",
+    "shared_data_target": "PostgreSQL via authenticated FalseTech API",
+    "sync_model": "event-based offline-capable synchronization; never file-sync live SQLite databases"
   },
+  "device_policy": {
+    "user_facing_names": [
+      "AJ-Desktop-Main",
+      "AJ-Desktop-2",
+      "AJ-Laptop",
+      "AJ-Phone"
+    ],
+    "opaque_ids": "internal_only"
+  },
+  "artifact_naming_policy": "Opaque/hash/UUID-style user-facing filenames must be replaced with readable canonical names when safe; preserve original name, path and hash in provenance.",
   "owners": ["Thomas", "Mine", "Unassigned"],
   "capabilities": [
     "owner-isolated inventory CRUD",
@@ -17,13 +36,23 @@
     "idempotent source-item import tracking",
     "exact unique-basename media relinking"
   ],
+  "target_capabilities": [
+    "shared cross-device canonical data platform",
+    "per-PC offline cache and queue",
+    "automatic Windows background synchronization",
+    "phone PWA access",
+    "device registry and provenance",
+    "automatic health checks and backups",
+    "automatic continuity result reporting",
+    "human-readable artifact naming with rename provenance"
+  ],
   "continuity_policy": "merge-forward-only",
-  "private_data_policy": "Never commit local inventory database, uploads, private inventory JSON, or exports to the public repository.",
-  "status": "canonical_main",
-  "canonical_main_commit": "c4f0aedbae8888413306990616c3a9b76c96f660",
-  "canonical_pr": 12,
+  "private_data_policy": "Never commit local inventory database, uploads, private inventory JSON, exports, credentials, or device secrets to the public repository.",
+  "status": "canonical_main_with_shared_data_platform_branch",
+  "canonical_main_commit": "ed4056a1c6945857ea9d669ea583c5b085944f7b",
+  "shared_data_platform_branch": "continuity/shared-data-platform",
   "validation": {
-    "pull_request_ci": "passed",
-    "main_ci": "passed"
+    "canonical_main_ci": "passed",
+    "shared_data_platform": "implementation_in_progress"
   }
 }
