@@ -1,11 +1,7 @@
 {
   "project_id": "simlay",
   "project": "SimLay",
-  "aliases": [
-    "StorageUnit SimLay",
-    "Storage Unit SimLay",
-    "FalseTech Resale"
-  ],
+  "aliases": ["StorageUnit SimLay", "Storage Unit SimLay", "FalseTech Resale"],
   "canonical_repository": "ifalsetto/StorageUnit_SimLay",
   "storefront_adapter_repository": {
     "canonical_name": "ifalsetto/FalseTech-Resale-Wix-Storefront",
@@ -29,12 +25,7 @@
     "status": "waiting_for_dedicated_falsetech_organization_to_be_visible_to_connected_supabase"
   },
   "device_policy": {
-    "user_facing_names": [
-      "AJ-Desktop-Main",
-      "AJ-Desktop-2",
-      "AJ-Laptop",
-      "AJ-Phone"
-    ],
+    "user_facing_names": ["AJ-Desktop-Main", "AJ-Desktop-2", "AJ-Laptop", "AJ-Phone"],
     "opaque_ids": "internal_only"
   },
   "artifact_naming_policy": "Opaque/hash/UUID-style user-facing filenames must be replaced with readable canonical names when safe; preserve original name, path and hash in provenance.",
