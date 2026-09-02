@@ -1,8 +1,16 @@
 import math
-from statistics import median
+from datetime import date, datetime, timezone
 from typing import Any
 
-from app.core.database import db_session, rows_to_dicts
+from app.core.database import rows_to_dicts
+from app.core.market_schema import ensure_market_schema
+from app.services.market.intelligence import (
+    estimate_routes,
+    evidence_weight,
+    policy_status,
+    resolve_market_state,
+    weighted_percentile,
+)
 
 
 def percentile(values: list[float], p: float) -> float | None:
@@ -28,6 +36,19 @@ def remove_iqr_outliers(values: list[float], multiplier: float = 1.5) -> list[fl
     lower = q1 - multiplier * iqr
     upper = q3 + multiplier * iqr
     return [v for v in values if lower <= v <= upper]
+
+
+def _parse_date(value: Any) -> date | None:
+    if not value:
+        return None
+    raw = str(value).strip()
+    try:
+        return datetime.fromisoformat(raw.replace("Z", "+00:00")).date()
+    except ValueError:
+        try:
+            return date.fromisoformat(raw[:10])
+        except ValueError:
+            return None
 
 
 def apply_condition_adjustment(value: float | None, condition: str, config: dict[str, Any]) -> float | None:
@@ -62,7 +83,16 @@ def gather_valid_evidence(conn, item_id: str, config: dict[str, Any]) -> tuple[l
     sold: list[dict] = []
     active: list[dict] = []
     warnings: list[str] = []
-    discount_pct = float(config["app_config"]["evidence"].get("active_listing_discount_pct", 15))
+    rules = config["valuation_rules"]
+    gates = rules.get("evidence_gates", {})
+    active_rules = rules.get("evidence_types", {}).get("active_listings", {})
+    discount_pct = float(active_rules.get(
+        "discount_pct",
+        config["app_config"]["evidence"].get("active_listing_discount_pct", 15),
+    ))
+    max_age_days = int(gates.get("max_comp_age_days", 365))
+    today = datetime.now(timezone.utc).date()
+
     for ev in rows:
         if ev.get("price") is None:
             _mark_excluded(conn, ev["evidence_id"], "price_null")
@@ -76,24 +106,68 @@ def gather_valid_evidence(conn, item_id: str, config: dict[str, Any]) -> tuple[l
         if int(ev.get("is_bundle") or 0) == 1:
             _mark_excluded(conn, ev["evidence_id"], "bundle")
             continue
+
+        is_active = ev.get("listing_type") == "active" or int(ev.get("is_active_listing") or 0) == 1
+        sale_date = _parse_date(ev.get("sale_date"))
+        if not is_active and sale_date and max_age_days > 0:
+            age_days = max(0, (today - sale_date).days)
+            if age_days > max_age_days:
+                _mark_excluded(conn, ev["evidence_id"], "comp_too_old")
+                warnings.append(
+                    f"Evidence {ev['evidence_id']} excluded: comp_too_old ({age_days}d > {max_age_days}d)"
+                )
+                continue
+
         price = float(ev["price"])
-        if ev.get("listing_type") == "active" or int(ev.get("is_active_listing") or 0) == 1:
+        weight, weight_meta = evidence_weight(ev, config)
+        ev["valuation_weight"] = weight
+        ev["valuation_weight_meta"] = weight_meta
+
+        if is_active:
             ev["discounted_price"] = round(price * (1 - discount_pct / 100), 2)
-            conn.execute("UPDATE evidence SET discounted_price=? WHERE evidence_id=?", (ev["discounted_price"], ev["evidence_id"]))
+            conn.execute(
+                "UPDATE evidence SET discounted_price=? WHERE evidence_id=?",
+                (ev["discounted_price"], ev["evidence_id"]),
+            )
             active.append(ev)
         else:
             sold.append(ev)
-        conn.execute("UPDATE evidence SET included_in_valuation=1, exclusion_reason=NULL WHERE evidence_id=?", (ev["evidence_id"],))
+        conn.execute(
+            "UPDATE evidence SET included_in_valuation=1, exclusion_reason=NULL WHERE evidence_id=?",
+            (ev["evidence_id"],),
+        )
     return sold, active, warnings
 
 
+def _weighted_rows(evidence: list[dict], *, active: bool = False) -> list[tuple[float, float]]:
+    rows: list[tuple[float, float]] = []
+    for ev in evidence:
+        value = float(ev.get("discounted_price") or ev["price"]) if active else float(ev["price"])
+        rows.append((value, float(ev.get("valuation_weight", 1.0))))
+    return rows
+
+
+def _clear_market_fields(conn, item_id: str) -> None:
+    ensure_market_schema(conn)
+    conn.execute(
+        """
+        UPDATE items SET market_adjusted_value=NULL, recommended_marketplace=NULL,
+        estimated_market_fee=NULL, expected_net=NULL, market_policy_as_of=NULL
+        WHERE item_id=?
+        """,
+        (item_id,),
+    )
+
+
 def compute_item_valuation(conn, item_id: str, config: dict[str, Any]) -> dict[str, Any]:
+    ensure_market_schema(conn)
     item = conn.execute("SELECT * FROM items WHERE item_id=?", (item_id,)).fetchone()
     if not item:
         raise ValueError(f"Item not found: {item_id}")
     item = dict(item)
     if item.get("deleted_at"):
         return {"passed": False, "reason": "item_deleted", "warnings": ["Deleted items are excluded from valuation runs."]}
+
     warnings: list[str] = []
     sold, active, ev_warnings = gather_valid_evidence(conn, item_id, config)
     warnings.extend(ev_warnings)
@@ -105,60 +179,141 @@ def compute_item_valuation(conn, item_id: str, config: dict[str, Any]) -> dict[s
     fallback = rules.get("fallback_rules", {}).get("no_sold_comps", {})
 
     source_used = "sold"
-    values = [float(ev["price"]) for ev in sold]
+    weighted_values = _weighted_rows(sold)
+    values = [value for value, _ in weighted_values]
     if not values and active_rules.get("allowed", True) and fallback.get("use_active", True):
         min_active = int(active_rules.get("min_active_for_fallback", 5))
-        active_values = [float(ev.get("discounted_price") or ev["price"]) for ev in active]
+        active_weighted = _weighted_rows(active, active=True)
+        active_values = [value for value, _ in active_weighted]
         if len(active_values) >= min_active:
+            weighted_values = active_weighted
             values = active_values
             source_used = "active_discounted_fallback"
         elif active_values:
-            warnings.append(f"Active comps available ({len(active_values)}) but below active fallback minimum ({min_active})")
+            warnings.append(
+                f"Active comps available ({len(active_values)}) but below active fallback minimum ({min_active})"
+            )
 
     if item.get("confidence") == "Unknown":
-        conn.execute("""
+        conn.execute(
+            """
             UPDATE items SET value_p25=NULL, value_p50=NULL, value_p75=NULL, value_export=NULL,
             value_source='none_unknown_confidence', valuation_passed_gates=0, flag_missing_comps=1 WHERE item_id=?
-        """, (item_id,))
+            """,
+            (item_id,),
+        )
+        _clear_market_fields(conn, item_id)
         return {"passed": False, "reason": "unknown_confidence", "warnings": warnings}
 
     if len(values) < min_comps:
-        conn.execute("""
+        conn.execute(
+            """
             UPDATE items SET value_p25=NULL, value_p50=NULL, value_p75=NULL, value_export=NULL,
             value_source='none_insufficient_evidence', valuation_passed_gates=0, flag_missing_comps=1 WHERE item_id=?
-        """, (item_id,))
-        return {"passed": False, "reason": "insufficient_evidence", "warnings": warnings, "valid_comp_count": len(values)}
+            """,
+            (item_id,),
+        )
+        _clear_market_fields(conn, item_id)
+        return {
+            "passed": False,
+            "reason": "insufficient_evidence",
+            "warnings": warnings,
+            "valid_comp_count": len(values),
+        }
 
-    filtered = remove_iqr_outliers(values, float(rules.get("outlier_detection", {}).get("iqr_multiplier", 1.5))) if rules.get("outlier_detection", {}).get("enabled", True) else values
+    filtered = (
+        remove_iqr_outliers(values, float(rules.get("outlier_detection", {}).get("iqr_multiplier", 1.5)))
+        if rules.get("outlier_detection", {}).get("enabled", True)
+        else values
+    )
     if not filtered:
         filtered = values
     low, high = min(filtered), max(filtered)
     if low > 0 and high / low > max_variance:
-        conn.execute("UPDATE items SET value_export=NULL, valuation_passed_gates=0, flag_high_variance=1 WHERE item_id=?", (item_id,))
-        return {"passed": False, "reason": "high_variance", "warnings": warnings, "variance_ratio": high / low}
+        conn.execute(
+            "UPDATE items SET value_export=NULL, valuation_passed_gates=0, flag_high_variance=1 WHERE item_id=?",
+            (item_id,),
+        )
+        _clear_market_fields(conn, item_id)
+        return {
+            "passed": False,
+            "reason": "high_variance",
+            "warnings": warnings,
+            "variance_ratio": high / low,
+        }
 
-    p25 = percentile(filtered, 25)
-    p50 = percentile(filtered, 50)
-    p75 = percentile(filtered, 75)
+    filtered_weighted = [(value, weight) for value, weight in weighted_values if value in filtered]
+    if not filtered_weighted:
+        filtered_weighted = weighted_values
+
+    p25 = weighted_percentile(filtered_weighted, 25)
+    p50 = weighted_percentile(filtered_weighted, 50)
+    p75 = weighted_percentile(filtered_weighted, 75)
     conf = item.get("confidence", "Inferred")
     method = rules.get("confidence_methods", {}).get(conf, {})
     export_percentile = float(method.get("percentile", 25))
     if source_used == "active_discounted_fallback":
         export_percentile = float(fallback.get("active_percentile", 20))
-    export_value = percentile(filtered, export_percentile)
+    export_value = weighted_percentile(filtered_weighted, export_percentile)
     if method.get("condition_adjustment", False):
         export_value = apply_condition_adjustment(export_value, item.get("visible_condition") or "Unknown", config)
+
     round_to = int(rules.get("export", {}).get("round_to", 0))
     if export_value is not None:
         export_value = round(export_value, round_to)
-    value_source = f"{source_used}_p{int(export_percentile)}"
-    conn.execute("""
+
+    market_state = resolve_market_state(item, config)
+    market_adjusted_value = None
+    routes = {"routes": [], "recommended": None, "policy": policy_status(config)}
+    if export_value is not None:
+        market_adjusted_value = round(export_value * float(market_state["multiplier"]), round_to)
+        routes = estimate_routes(item, market_adjusted_value, config)
+        if routes.get("policy", {}).get("stale"):
+            warnings.append("Market fee policy is stale; refresh backend/config/market_intelligence.yaml before relying on expected net.")
+
+    recommendation = routes.get("recommended") or {}
+    value_source = f"weighted_{source_used}_p{int(export_percentile)}"
+    conn.execute(
+        """
         UPDATE items SET value_p25=?, value_p50=?, value_p75=?, value_export=?, value_source=?,
-        valuation_passed_gates=1, flag_missing_comps=0, flag_high_variance=0 WHERE item_id=?
-    """, (p25, p50, p75, export_value, value_source, item_id))
-    return {"passed": True, "value_export": export_value, "value_source": value_source, "p25": p25, "p50": p50, "p75": p75, "warnings": warnings}
+        valuation_passed_gates=1, flag_missing_comps=0, flag_high_variance=0,
+        market_state=?, market_adjusted_value=?, recommended_marketplace=?, estimated_market_fee=?,
+        expected_net=?, market_policy_as_of=?
+        WHERE item_id=?
+        """,
+        (
+            p25,
+            p50,
+            p75,
+            export_value,
+            value_source,
+            market_state["state"],
+            market_adjusted_value,
+            recommendation.get("marketplace"),
+            recommendation.get("estimated_fee"),
+            recommendation.get("expected_net"),
+            routes.get("policy", {}).get("policy_as_of"),
+            item_id,
+        ),
+    )
+    return {
+        "passed": True,
+        "value_export": export_value,
+        "value_source": value_source,
+        "p25": p25,
+        "p50": p50,
+        "p75": p75,
+        "market_state": market_state,
+        "market_adjusted_value": market_adjusted_value,
+        "market_routes": routes,
+        "source_weights": [ev.get("valuation_weight_meta") for ev in (sold or active)],
+        "warnings": warnings,
+    }
 
 
 def compute_run_valuations(conn, run_id: str, config: dict[str, Any]) -> list[dict[str, Any]]:
-    items = rows_to_dicts(conn.execute("SELECT item_id FROM items WHERE run_id=? AND deleted_at IS NULL", (run_id,)).fetchall())
+    ensure_market_schema(conn)
+    items = rows_to_dicts(
+        conn.execute("SELECT item_id FROM items WHERE run_id=? AND deleted_at IS NULL", (run_id,)).fetchall()
+    )
     return [compute_item_valuation(conn, item["item_id"], config) for item in items]

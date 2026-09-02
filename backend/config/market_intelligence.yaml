@@ -1,0 +1,126 @@
+market_intelligence_version: "1.1"
+policy_as_of: "2026-09-02"
+currency: "USD"
+
+# Source authority controls how much influence each comp has. The engine still
+# applies outlier and age gates before weighting.
+source_authority:
+  ebay_product_research: 1.00
+  verified_exact_sold: 1.00
+  accepted_offer: 0.95
+  tcgplayer: 0.90
+  reverb: 0.90
+  pricecharting: 0.90
+  discogs: 0.90
+  swappa: 0.90
+  ebay: 0.85
+  mercari: 0.80
+  poshmark: 0.80
+  stockx: 0.85
+  goat: 0.85
+  facebook: 0.65
+  whatnot: 0.70
+  user_screenshot: 0.75
+  user_url: 0.70
+  sold_default: 0.80
+  active_listing: 0.35
+  retail_msrp: 0.20
+
+freshness:
+  half_life_days: 120
+  minimum_weight: 0.50
+
+# Short-lived market signals are intentionally date-bounded. Expired signals
+# automatically fall back to NORMAL instead of silently becoming permanent.
+market_state:
+  default: "NORMAL"
+  multipliers:
+    RISING: 1.05
+    FIRM: 1.02
+    NORMAL: 1.00
+    SOFTENING: 0.92
+    OVERSUPPLIED: 0.85
+  signals:
+    - name: "vintage_designer_rising"
+      state: "RISING"
+      expires_at: "2026-10-15"
+      terms: ["vintage designer", "designer vintage", "y2k designer", "luxury vintage"]
+    - name: "generic_sneaker_softening"
+      state: "SOFTENING"
+      expires_at: "2026-10-01"
+      terms: ["generic sneaker", "general release sneaker", "general release shoes"]
+
+# Fee estimates are seller-side planning estimates. Marketplace terms can
+# change; keep policy_as_of current. The default eBay model intentionally uses
+# the no-Store/Starter baseline instead of silently assuming a paid Store tier.
+marketplaces:
+  ebay:
+    enabled: true
+    auto_route: true
+    general_market: true
+    seller_tier: "none_or_starter"
+    default:
+      percent: 13.60
+      fixed_over_10: 0.40
+      fixed_10_or_less: 0.30
+    category_rules:
+      - terms: ["book", "magazine", "movie", "music cd"]
+        percent: 15.30
+    notes: "Paid eBay Store category discounts are not assumed. Add a verified seller-tier profile before using Store-specific rates."
+  mercari:
+    enabled: true
+    auto_route: true
+    general_market: true
+    default:
+      percent: 10.00
+      fixed: 0.00
+  reverb:
+    enabled: true
+    auto_route: true
+    general_market: false
+    category_terms: ["guitar", "bass", "amp", "amplifier", "pedal", "synth", "keyboard", "microphone", "audio interface", "music gear", "instrument"]
+    fee_model: "reverb_us"
+    default:
+      selling_percent: 5.00
+      processing_percent: 3.19
+      processing_fixed: 0.49
+  poshmark:
+    enabled: true
+    auto_route: true
+    general_market: false
+    category_terms: ["clothing", "fashion", "dress", "shirt", "jacket", "jeans", "handbag", "purse", "shoes", "jewelry", "accessory"]
+    fee_model: "poshmark_us"
+  tcgplayer:
+    enabled: true
+    auto_route: true
+    general_market: false
+    category_terms: ["trading card", "pokemon", "magic the gathering", "mtg", "yugioh", "one piece card", "lorcana", "palworld card", "cyberpunk tcg"]
+    fee_model: "tcgplayer_marketplace_standard"
+    default:
+      commission_percent: 10.75
+      commission_cap_per_item: 75.00
+      transaction_percent: 2.50
+      transaction_fixed: 0.30
+  facebook_local:
+    enabled: true
+    auto_route: false
+    general_market: true
+    default:
+      percent: 0.00
+      fixed: 0.00
+    notes: "Local in-person planning only; shipping/payment-product fees are not modeled."
+  local_cash:
+    enabled: true
+    auto_route: false
+    general_market: true
+    default:
+      percent: 0.00
+      fixed: 0.00
+    notes: "Local cash planning only; no marketplace protection or sell-through assumption."
+
+routing:
+  include_general_markets: ["ebay", "mercari"]
+  recommend_by: "highest_expected_net"
+  require_positive_net: true
+  shipping_cost_default: 0.00
+  risk_allowance_pct_default: 0.00

@@ -5,6 +5,7 @@ param(
     [string]$DistinguishedName = "CN=StorageUnit SimLay, OU=App Release, O=StorageUnit SimLay, L=City, ST=State, C=US"
 )
 $ErrorActionPreference = "Stop"
+& (Join-Path $PSScriptRoot "CONTINUITY_CHECK_WINDOWS.ps1") -RequireCanonical | Out-Null
 $mobile = Join-Path $PSScriptRoot "mobile\android"
 $keyPath = Join-Path $mobile "release-upload-key.jks"
 if (-not $StorePassword) { $StorePassword = Read-Host "Enter new keystore password" }

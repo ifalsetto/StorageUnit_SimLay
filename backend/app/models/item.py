@@ -43,6 +43,12 @@ class ItemModel(SimLayModel):
     value_export: Optional[float] = None
     value_source: Optional[str] = None
     valuation_passed_gates: bool = False
+    market_state: str = "NORMAL"
+    market_adjusted_value: Optional[float] = None
+    recommended_marketplace: Optional[str] = None
+    estimated_market_fee: Optional[float] = None
+    expected_net: Optional[float] = None
+    market_policy_as_of: Optional[str] = None
     wix_handle: Optional[str] = None
     wix_sku: Optional[str] = None
     wix_exported: bool = False
@@ -66,6 +72,8 @@ class ItemModel(SimLayModel):
         "value_p50",
         "value_p75",
         "value_export",
+        "market_adjusted_value",
+        "estimated_market_fee",
     )
     @classmethod
     def valuation_values_nonnegative(cls, value: Optional[float]) -> Optional[float]:

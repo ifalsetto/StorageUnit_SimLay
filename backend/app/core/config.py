@@ -39,6 +39,7 @@ def load_all_config(profile_name: str = "default") -> dict[str, Any]:
         "confidence_rules": load_yaml(CONFIG_DIR / "confidence_rules.yaml"),
         "dedupe_rules": load_yaml(CONFIG_DIR / "dedupe_rules.yaml"),
         "valuation_rules": load_yaml(CONFIG_DIR / "valuation_rules.yaml"),
+        "market_intelligence": load_yaml(CONFIG_DIR / "market_intelligence.yaml"),
         "connectors": load_yaml(CONFIG_DIR / "connectors.yaml"),
         "wix_schema": load_json(CONFIG_DIR / "wix_schema.json"),
     }
