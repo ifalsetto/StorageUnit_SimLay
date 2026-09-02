@@ -14,6 +14,7 @@ $ConfigPath = Join-Path $SystemDir 'FalseTech-Node.json'
 $Venv = Join-Path $NodeDir '.venv'
 $PythonExe = Join-Path $Venv 'Scripts\python.exe'
 $AgentScript = Join-Path $NodeDir 'falsetech_node.py'
+$AuthScript = Join-Path $NodeDir 'falsetech_auth_setup.py'
 $StorageScript = Join-Path $NodeDir 'falsetech_storage_sync.py'
 $FetchScript = Join-Path $NodeDir 'falsetech_storage_fetch.py'
 $Requirements = Join-Path $NodeDir 'requirements.txt'
@@ -21,9 +22,7 @@ $SupabaseUrl = 'https://ppbchnypnyscwkbmoiqv.supabase.co'
 $PublishableKey = 'sb_publishable_6xfEmDvcJvxO0fuNNA6E5g_fwCeDLe2'
 $RawBase = 'https://raw.githubusercontent.com/ifalsetto/StorageUnit_SimLay/continuity/shared-data-platform/tools/falsetech-node'
 
-function Write-Step([string]$Message) {
-    Write-Host "`n=== $Message ===" -ForegroundColor Cyan
-}
+function Write-Step([string]$Message) { Write-Host "`n=== $Message ===" -ForegroundColor Cyan }
 
 function Ensure-Admin {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -44,8 +43,7 @@ function Resolve-DeviceName {
     Write-Host '  1. AJ-Desktop-Main'
     Write-Host '  2. AJ-Desktop-2'
     Write-Host '  3. AJ-Laptop'
-    $choice = Read-Host 'Enter 1, 2, or 3'
-    switch ($choice) {
+    switch (Read-Host 'Enter 1, 2, or 3') {
         '1' { return 'AJ-Desktop-Main' }
         '2' { return 'AJ-Desktop-2' }
         '3' { return 'AJ-Laptop' }
@@ -80,12 +78,11 @@ Write-Host "Existing FalseTech root contains $($existing.Count) top-level entrie
 Write-Step 'Installing FalseTech Node runtime'
 $SystemPython = Ensure-Python
 Invoke-WebRequest "$RawBase/falsetech_node.py" -OutFile $AgentScript -UseBasicParsing
+Invoke-WebRequest "$RawBase/falsetech_auth_setup.py" -OutFile $AuthScript -UseBasicParsing
 Invoke-WebRequest "$RawBase/falsetech_storage_sync.py" -OutFile $StorageScript -UseBasicParsing
 Invoke-WebRequest "$RawBase/falsetech_storage_fetch.py" -OutFile $FetchScript -UseBasicParsing
 Invoke-WebRequest "$RawBase/requirements.txt" -OutFile $Requirements -UseBasicParsing
-if (-not (Test-Path $PythonExe)) {
-    & $SystemPython -m venv $Venv
-}
+if (-not (Test-Path $PythonExe)) { & $SystemPython -m venv $Venv }
 & $PythonExe -m pip install --upgrade pip | Out-Null
 & $PythonExe -m pip install -r $Requirements
 
@@ -116,9 +113,15 @@ $config = [ordered]@{
 }
 $config | ConvertTo-Json -Depth 5 | Set-Content -Path $ConfigPath -Encoding UTF8
 
-Write-Step 'Authenticating this device'
-Write-Host 'Enter the FalseTech/Supabase password once. The refresh token is stored in Windows Credential Manager, not in this config file.' -ForegroundColor Yellow
-& $PythonExe $AgentScript --config $ConfigPath --login
+Write-Step 'One-time FalseTech account setup'
+Write-Host 'Use the same FalseTech account on all four devices. The password is never written to the config file.' -ForegroundColor Yellow
+& $PythonExe $AuthScript --config $ConfigPath
+$authExit = $LASTEXITCODE
+if ($authExit -eq 10) {
+    Write-Host "`nOne verification email is required by Supabase. Confirm it, then run this same setup file again; everything already installed will be reused." -ForegroundColor Yellow
+    exit 10
+}
+if ($authExit -ne 0) { throw 'FalseTech account setup did not complete.' }
 
 Write-Step 'Registering device and running first scan'
 & $PythonExe $AgentScript --config $ConfigPath --once
@@ -130,20 +133,17 @@ Write-Step 'Synchronizing shared files'
 Write-Step 'Installing automatic startup'
 $taskCommand = "`"$PythonExe`" `"$AgentScript`" --config `"$ConfigPath`" --watch"
 schtasks.exe /Create /TN 'FalseTech Node Agent' /SC ONLOGON /RL HIGHEST /TR $taskCommand /F | Out-Null
-
 $storageCommand = "`"$PythonExe`" `"$StorageScript`" --config `"$ConfigPath`" --limit 500"
 schtasks.exe /Create /TN 'FalseTech Node Storage Upload' /SC HOURLY /MO 1 /RL HIGHEST /TR $storageCommand /F | Out-Null
-
 $fetchCommand = "`"$PythonExe`" `"$FetchScript`" --config `"$ConfigPath`" --limit 1000"
 schtasks.exe /Create /TN 'FalseTech Node Storage Download' /SC ONLOGON /RL HIGHEST /TR $fetchCommand /F | Out-Null
 schtasks.exe /Create /TN 'FalseTech Node Storage Download Hourly' /SC HOURLY /MO 1 /RL HIGHEST /TR $fetchCommand /F | Out-Null
-
 $doctorCommand = "`"$PythonExe`" `"$AgentScript`" --config `"$ConfigPath`" --doctor"
 schtasks.exe /Create /TN 'FalseTech Node Daily Health Check' /SC DAILY /ST 07:15 /RL HIGHEST /TR $doctorCommand /F | Out-Null
 
 Write-Step 'Final health check'
 & $PythonExe $AgentScript --config $ConfigPath --doctor
-if ($LASTEXITCODE -ne 0) { throw 'FalseTech Node health check failed. Review the human-readable report under C:\FalseTech\Continuity\Reports.' }
+if ($LASTEXITCODE -ne 0) { throw 'FalseTech Node health check failed. Review C:\FalseTech\Continuity\Reports.' }
 
 Write-Host "`nFALSETECH NODE INSTALLED" -ForegroundColor Green
 Write-Host "Device: $DeviceName"
