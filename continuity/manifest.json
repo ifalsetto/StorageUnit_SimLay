@@ -7,7 +7,12 @@
     "FalseTech Resale"
   ],
   "canonical_repository": "ifalsetto/StorageUnit_SimLay",
-  "storefront_adapter_repository": "ifalsetto/StorageUnit-Simlay",
+  "storefront_adapter_repository": {
+    "canonical_name": "ifalsetto/FalseTech-Resale-Wix-Storefront",
+    "historical_name": "ifalsetto/StorageUnit-Simlay",
+    "rename_status": "github_repository_rename_pending",
+    "role": "FalseTech Resale Wix storefront adapter only"
+  },
   "version": "2.1.0-shared-data-platform-dev",
   "runtime": {
     "backend": "FastAPI + SQLite compatibility layer",
@@ -15,6 +20,13 @@
     "local_storage": "local-first SQLite + local filesystem media/exports",
     "shared_data_target": "PostgreSQL via authenticated FalseTech API",
     "sync_model": "event-based offline-capable synchronization; never file-sync live SQLite databases"
+  },
+  "shared_data_platform": {
+    "provider": "Supabase/PostgreSQL",
+    "required_organization_name": "FalseTech",
+    "existing_apex_dashboard_organization_allowed": false,
+    "project_name": "FalseTech Data Platform",
+    "status": "waiting_for_dedicated_falsetech_organization"
   },
   "device_policy": {
     "user_facing_names": [
