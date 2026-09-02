@@ -30,25 +30,8 @@
   },
   "artifact_naming_policy": "Opaque/hash/UUID-style user-facing filenames must be replaced with readable canonical names when safe; preserve original name, path and hash in provenance.",
   "owners": ["Thomas", "Mine", "Unassigned"],
-  "capabilities": [
-    "owner-isolated inventory CRUD",
-    "recoverable soft delete and audit logging",
-    "item-linked photo safety",
-    "evidence-gated valuation and acquisition decisions",
-    "private photo-inventory JSON import",
-    "idempotent source-item import tracking",
-    "exact unique-basename media relinking"
-  ],
-  "target_capabilities": [
-    "shared cross-device canonical data platform",
-    "per-PC offline cache and queue",
-    "automatic Windows background synchronization",
-    "phone PWA access",
-    "device registry and provenance",
-    "automatic health checks and backups",
-    "automatic continuity result reporting",
-    "human-readable artifact naming with rename provenance"
-  ],
+  "capabilities": ["owner-isolated inventory CRUD", "recoverable soft delete and audit logging", "item-linked photo safety", "evidence-gated valuation and acquisition decisions", "private photo-inventory JSON import", "idempotent source-item import tracking", "exact unique-basename media relinking"],
+  "target_capabilities": ["shared cross-device canonical data platform", "per-PC offline cache and queue", "automatic Windows background synchronization", "phone PWA access", "device registry and provenance", "automatic health checks and backups", "automatic continuity result reporting", "human-readable artifact naming with rename provenance"],
   "continuity_policy": "merge-forward-only",
   "private_data_policy": "Never commit local inventory database, uploads, private inventory JSON, exports, credentials, or device secrets to the public repository.",
   "status": "canonical_main_with_shared_data_platform_branch",
