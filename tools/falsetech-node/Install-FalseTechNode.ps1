@@ -111,7 +111,9 @@ $config = [ordered]@{
     scan_roots = @($Root,$downloadRoot,$desktopRoot,$documentsRoot)
     rename_roots = @($downloadRoot,$managedDownloads,$managedMedia,$managedDocuments,$managedExports)
 }
-$config | ConvertTo-Json -Depth 5 | Set-Content -Path $ConfigPath -Encoding UTF8
+$configJson = $config | ConvertTo-Json -Depth 5
+$utf8WithoutBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText($ConfigPath, $configJson, $utf8WithoutBom)
 
 Write-Step 'One-time FalseTech account setup'
 Write-Host 'Use the same FalseTech account on all four devices. The password is never written to the config file.' -ForegroundColor Yellow

@@ -1,4 +1,5 @@
 from importlib.util import module_from_spec, spec_from_file_location
+import json
 from pathlib import Path
 import sys
 
@@ -14,6 +15,33 @@ storage_spec = spec_from_file_location("falsetech_storage_sync", MODULE_ROOT / "
 storage = module_from_spec(storage_spec)
 assert storage_spec and storage_spec.loader
 storage_spec.loader.exec_module(storage)
+
+
+def config_payload(tmp_path):
+    return {
+        "root": str(tmp_path / "FalseTech"),
+        "supabase_url": "https://example.supabase.co",
+        "publishable_key": "test-key",
+        "email": "person@example.com",
+        "device_name": "AJ-Desktop-Main",
+    }
+
+
+def test_settings_accepts_windows_powershell_utf8_bom(tmp_path):
+    config = tmp_path / "FalseTech-Node.json"
+    config.write_text(json.dumps(config_payload(tmp_path)), encoding="utf-8-sig")
+
+    settings = node.Settings(config)
+
+    assert settings.email == "person@example.com"
+    assert settings.device_name == "AJ-Desktop-Main"
+
+
+def test_windows_installer_writes_new_config_without_bom():
+    installer = (MODULE_ROOT / "Install-FalseTechNode.ps1").read_text(encoding="utf-8")
+
+    assert "System.Text.UTF8Encoding($false)" in installer
+    assert "WriteAllText($ConfigPath, $configJson, $utf8WithoutBom)" in installer
 
 
 def test_opaque_hash_and_uuid_names_are_detected():
