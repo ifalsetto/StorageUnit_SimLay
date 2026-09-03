@@ -132,7 +132,9 @@ def iter_files(roots: list[Path]):
 
 class Settings:
     def __init__(self, path: Path):
-        data = json.loads(path.read_text(encoding="utf-8"))
+        # Windows PowerShell 5.1 writes a UTF-8 BOM for ``-Encoding UTF8``.
+        # utf-8-sig accepts those existing configs and ordinary UTF-8 files.
+        data = json.loads(path.read_text(encoding="utf-8-sig"))
         self.config_path = path
         self.root = Path(data.get("root", r"C:\FalseTech"))
         self.db_path = Path(data.get("db_path", self.root / "Continuity" / "FalseTech-Node-Cache.db"))
