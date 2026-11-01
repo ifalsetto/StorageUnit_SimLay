@@ -1,4 +1,5 @@
 import { SimLayApi } from './api.js';
+import { detectBarcodes } from './barcode.js';
 import './styles/capture.css';
 
 const ownerSelect = document.getElementById('capture-owner');
@@ -130,3 +131,30 @@ ownerSelect.addEventListener('change', async () => {
 });
 
 initialize();
+
+
+const scanBarcodeButton = document.getElementById('scan-barcode');
+const barcodeInput = document.getElementById('barcode-input');
+const barcodeResult = document.getElementById('barcode-result');
+scanBarcodeButton.addEventListener('click', () => barcodeInput.click());
+barcodeInput.addEventListener('change', async () => {
+  const file = barcodeInput.files?.[0];
+  if (!file) return;
+  scanBarcodeButton.disabled = true;
+  barcodeResult.textContent = 'Decoding locally…';
+  try {
+    const result = await detectBarcodes(file);
+    if (result.status === 'detected') {
+      barcodeResult.textContent = 'Unverified barcode evidence: ' +
+        result.codes.map((code) => code.format + ': ' + code.value).join(' · ') +
+        '. Confirm the item before using this code.';
+    } else if (result.status === 'unsupported') {
+      barcodeResult.textContent = 'Local barcode detection is unavailable in this browser. No image was uploaded.';
+    } else {
+      barcodeResult.textContent = result.status === 'none' ? 'No barcode found in this image.' : 'Could not decode the barcode locally.';
+    }
+  } finally {
+    barcodeInput.value = '';
+    scanBarcodeButton.disabled = false;
+  }
+});
