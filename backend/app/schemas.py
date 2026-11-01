@@ -133,6 +133,16 @@ class EvidenceCreate(ApiSchema):
         return value
 
 
+    @model_validator(mode="after")
+    def barcode_observation_is_unpriced(self):
+        if self.source_type == EvidenceSourceType.BARCODE.value:
+            if self.price is not None or self.listing_type != ListingType.OBSERVATION.value:
+                raise ValueError("barcode observations must be unpriced and have listing_type=observation")
+            if not self.notes or len(self.notes) > 512:
+                raise ValueError("barcode observations require concise source notes")
+        return self
+
+
 class EvidenceUrlRefreshRequest(ApiSchema):
     evidence_id: str
 
