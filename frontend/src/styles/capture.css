@@ -32,3 +32,6 @@ button:disabled{opacity:.5;cursor:wait}
 .capture-preview img{width:92px;height:92px;object-fit:cover;border-radius:14px;background:#06101a}
 .capture-preview strong,.capture-preview span{display:block;word-break:break-word}.capture-preview span{margin-top:6px;color:#90a3bb}
 @media(max-width:520px){#capture-root{place-items:stretch}.capture-shell{border-radius:22px;padding:16px}.capture-topline{align-items:flex-start}.camera-button{min-height:82px;font-size:24px}}
+
+/* The capture layout uses CSS grid; honor hidden until barcode evidence is ready. */
+#capture-root [hidden]{display:none!important}
