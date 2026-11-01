@@ -3,7 +3,7 @@ from pydantic import ValidationError
 from app.models.enums import Confidence
 from app.models.item import ItemModel
 from app.models.valuation import should_export_price
-from app.schemas import ItemCreate
+from app.schemas import ItemCreate, EvidenceCreate
 
 
 def test_item_create_uses_guardrail_enums_and_strips_name():
@@ -41,3 +41,42 @@ def test_verified_with_passed_gates_can_export_price():
     )
     assert item.can_export_price is True
     assert should_export_price(item.model_dump()) is True
+
+
+def test_unverified_barcode_evidence_must_be_unpriced_observation():
+    payload = EvidenceCreate(
+        item_id="item_1", source_type="barcode", source_name="local_barcode_scan",
+        listing_type="observation", price=None,
+        notes="Unverified local barcode EAN_13: 1234567890123",
+    )
+    assert payload.source_type == "barcode"
+    assert payload.listing_type == "observation"
+    assert payload.price is None
+
+
+def test_barcode_cannot_be_marked_as_sold_or_priced():
+    for invalid in (
+        {"listing_type": "sold", "price": None},
+        {"listing_type": "observation", "price": 49.99},
+    ):
+        try:
+            EvidenceCreate(
+                item_id="item_1", source_type="barcode", notes="Unverified barcode observation",
+                **invalid,
+            )
+        except ValidationError:
+            pass
+        else:
+            raise AssertionError("Barcode must never count as a priced sale")
+
+
+def test_barcode_requires_provenance_note():
+    try:
+        EvidenceCreate(
+            item_id="item_1", source_type="barcode",
+            listing_type="observation", price=None, notes=None,
+        )
+    except ValidationError:
+        pass
+    else:
+        raise AssertionError("Barcode evidence must include provenance")
