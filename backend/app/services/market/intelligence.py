@@ -33,7 +33,7 @@ def policy(config: dict[str, Any]) -> dict[str, Any]:
 def policy_status(config: dict[str, Any], *, stale_after_days: int = 45) -> dict[str, Any]:
     cfg = policy(config)
     as_of = _parse_date(cfg.get("policy_as_of"))
-    today = as_of if as_of is not None else datetime.now(timezone.utc).date()
+    today = datetime.now(timezone.utc).date()
     age_days = (today - as_of).days if as_of else None
     return {
         "policy_as_of": cfg.get("policy_as_of"),
@@ -105,12 +105,12 @@ def weighted_percentile(weighted_values: list[tuple[float, float]], percentile: 
     return clean[-1][0]
 
 
-def resolve_market_state(item: dict[str, Any], config: dict[str, Any], *, as_of=None) -> dict[str, Any]:
+def resolve_market_state(item: dict[str, Any], config: dict[str, Any], *, as_of: date | None = None) -> dict[str, Any]:
     cfg = policy(config).get("market_state", {})
     default_state = str(cfg.get("default", "NORMAL")).upper()
     state = default_state
     signal_name = None
-    today = datetime.now(timezone.utc).date()
+    today = as_of if as_of is not None else datetime.now(timezone.utc).date()
     haystack = _text(
         item.get("final_name"),
         item.get("raw_name"),
