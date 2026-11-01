@@ -5,12 +5,13 @@ export async function detectBarcodes(file, { Detector = globalThis.BarcodeDetect
   if (typeof Detector !== "function" || typeof createBitmap !== "function") {
     return { status: "unsupported", codes: [] };
   }
-  const supported = typeof Detector.getSupportedFormats === "function"
-    ? await Detector.getSupportedFormats() : BARCODE_FORMATS;
-  const formats = BARCODE_FORMATS.filter((format) => supported.includes(format));
-  if (!formats.length) return { status: "unsupported", codes: [] };
   let bitmap;
   try {
+    const supported = typeof Detector.getSupportedFormats === "function"
+      ? await Detector.getSupportedFormats() : BARCODE_FORMATS;
+    if (!Array.isArray(supported)) return { status: "unsupported", codes: [] };
+    const formats = BARCODE_FORMATS.filter((format) => supported.includes(format));
+    if (!formats.length) return { status: "unsupported", codes: [] };
     bitmap = await createBitmap(file);
     const detected = await new Detector({ formats }).detect(bitmap);
     const codes = [...new Map((detected || []).filter((item) =>
