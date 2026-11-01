@@ -42,6 +42,10 @@
         <button id="choose-photo" class="secondary-button" type="button">Choose Existing Photo</button>
         <input id="library-input" type="file" accept="image/*" hidden />
 
+        <button id="scan-barcode" class="secondary-button" type="button">Scan barcode from photo (local)</button>
+        <input id="barcode-input" type="file" accept="image/*" hidden />
+        <div id="barcode-result" class="capture-status" role="status" aria-live="polite">Optional. Barcode evidence is not a verified product identity or price.</div>
+
         <div id="capture-status" class="capture-status" role="status" aria-live="polite">Connecting to SimLay…</div>
 
         <div id="capture-preview" class="capture-preview" hidden>
