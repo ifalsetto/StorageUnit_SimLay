@@ -1,3 +1,5 @@
+from datetime import date
+
 from app.core.config import load_all_config
 from app.services.market.intelligence import (
     estimate_marketplace_fee,
@@ -97,6 +99,18 @@ def test_generic_sneaker_signal_softens_value_temporarily():
     state = resolve_market_state(
         {"final_name": "General release sneaker", "category": "Shoes"},
         config(),
+        as_of=date(2026, 9, 15),
     )
     assert state["state"] == "SOFTENING"
     assert state["multiplier"] == 0.92
+
+
+def test_expired_market_signal_restores_normal_value():
+    state = resolve_market_state(
+        {"final_name": "General release sneaker", "category": "Shoes"},
+        config(),
+        as_of=date(2026, 11, 1),
+    )
+    assert state["state"] == "NORMAL"
+    assert state["multiplier"] == 1.0
+    assert state["signal"] is None
