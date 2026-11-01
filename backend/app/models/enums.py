@@ -49,12 +49,14 @@ class EvidenceSourceType(str, Enum):
     SCREENSHOT = "screenshot"
     LIBRARY = "library"
     MANUAL_URL = "manual_url"
+    BARCODE = "barcode"
 
 
 class ListingType(str, Enum):
     SOLD = "sold"
     ACTIVE = "active"
     AUCTION_ENDED = "auction_ended"
+    OBSERVATION = "observation"
 
 
 class ValuationStatus(str, Enum):
