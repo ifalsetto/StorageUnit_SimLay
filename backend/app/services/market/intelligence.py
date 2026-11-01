@@ -105,12 +105,12 @@ def weighted_percentile(weighted_values: list[tuple[float, float]], percentile: 
     return clean[-1][0]
 
 
-def resolve_market_state(item: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
+def resolve_market_state(item: dict[str, Any], config: dict[str, Any], *, as_of: date | None = None) -> dict[str, Any]:
     cfg = policy(config).get("market_state", {})
     default_state = str(cfg.get("default", "NORMAL")).upper()
     state = default_state
     signal_name = None
-    today = datetime.now(timezone.utc).date()
+    today = as_of if as_of is not None else datetime.now(timezone.utc).date()
     haystack = _text(
         item.get("final_name"),
         item.get("raw_name"),

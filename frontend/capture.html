@@ -42,6 +42,19 @@
         <button id="choose-photo" class="secondary-button" type="button">Choose Existing Photo</button>
         <input id="library-input" type="file" accept="image/*" hidden />
 
+        <button id="scan-barcode" class="secondary-button" type="button">Scan barcode from photo (local)</button>
+        <input id="barcode-input" type="file" accept="image/*" hidden />
+        <div id="barcode-result" class="capture-status" role="status" aria-live="polite">Optional. Barcode evidence is not a verified product identity or price.</div>
+
+        <section id="barcode-evidence-panel" class="capture-run-card" hidden aria-label="Link barcode to an existing inventory item">
+          <label class="owner-label" for="barcode-code">Detected barcode</label>
+          <select id="barcode-code" class="owner-select"></select>
+          <label class="owner-label" for="barcode-item">Existing item in this owner's run</label>
+          <select id="barcode-item" class="owner-select"></select>
+          <button id="save-barcode" class="secondary-button" type="button" disabled>Save unverified code to selected item</button>
+          <p class="owner-note">Review the physical item before linking. The barcode is recorded as an unpriced observation; it does not identify the product or change its value.</p>
+        </section>
+
         <div id="capture-status" class="capture-status" role="status" aria-live="polite">Connecting to SimLay…</div>
 
         <div id="capture-preview" class="capture-preview" hidden>

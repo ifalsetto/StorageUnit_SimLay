@@ -86,5 +86,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Install frontend
         run: npm ci
+      - name: Test local barcode evidence
+        run: node --test tests/barcode.test.mjs
       - name: Build frontend
         run: npm run build
