@@ -28,3 +28,19 @@ test("decoding failure closes bitmap and fails closed", async () => {
   assert.equal(result.status, "failed");
   assert.equal(closed, true);
 });
+
+test("native detector initialization failure never crashes capture", async () => {
+  class Detector { static async getSupportedFormats() { throw Error("permission denied"); } }
+  assert.deepEqual(await detectBarcodes(file, { Detector, createBitmap: async () => { throw Error("must not run"); } }), { status: "failed", codes: [] });
+});
+test("unavailable formats return unsupported without constructing bitmap", async () => {
+  class Detector { static async getSupportedFormats() { return []; } }
+  assert.deepEqual(await detectBarcodes(file, { Detector, createBitmap: async () => { throw Error("must not run"); } }), { status: "unsupported", codes: [] });
+});
+test("blank barcode and excessive payload are discarded", async () => {
+  class Detector {
+    static async getSupportedFormats() { return ["ean_13"]; }
+    async detect() { return [{ format: "ean_13", rawValue: "" }, { format: "ean_13", rawValue: "x".repeat(257) }]; }
+  }
+  assert.deepEqual(await detectBarcodes(file, { Detector, createBitmap: async () => ({ close() {} }) }), { status: "none", codes: [] });
+});
